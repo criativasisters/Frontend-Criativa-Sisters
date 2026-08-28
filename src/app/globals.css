@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+:root {
+  --background: #050505;
+  --foreground: #ededed;
+  
+  --magenta-shock: #FF3366;
+  --rosa-metalico: #E0829D;
+  --violeta-cosmico: #8A2BE2;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+/* Utilitários de Estilo Premium (Criativa Sisters Blueprint) */
+.gradient-text {
+  background: linear-gradient(90deg, var(--magenta-shock), var(--rosa-metalico), var(--violeta-cosmico));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-bg {
+  background: linear-gradient(135deg, var(--magenta-shock) 0%, var(--rosa-metalico) 50%, var(--violeta-cosmico) 100%);
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+}
+
+.btn-primary {
+  @apply gradient-bg text-white font-bold py-3 px-6 rounded-lg transition-transform hover:scale-105 shadow-[0_0_15px_rgba(255,51,102,0.4)];
+}
+
+.btn-secondary {
+  @apply glass-panel text-white font-semibold py-3 px-6 rounded-lg transition-colors hover:bg-white/10;
+}
