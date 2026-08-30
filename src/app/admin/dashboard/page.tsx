@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Settings, Package, Users, LogOut, Phone, Save } from 'lucide-react';
+import { Settings, Package, Users, LogOut, Phone, Save, Store, Plus } from 'lucide-react';
 import Image from 'next/image';
 
 // Dados Fakes para o MVP (Futuramente vira do Supabase)
@@ -12,19 +12,24 @@ const mockOrders = [
   { id: 'proj_1193', status: 'Cancelado (Falta de suporte)', scale: '100%', qty: 1, price: '92,00', date: '28/08/2026' }
 ];
 
+const mockProducts = [
+  { id: 'prod_1', name: 'Busto Heroico', price: '149,90', stock: 12 },
+  { id: 'prod_2', name: 'Luminária Geométrica', price: '89,90', stock: 5 },
+  { id: 'prod_3', name: 'Mascote Corporativo', price: '199,00', stock: 2 }
+];
+
 export default function AdminDashboard() {
   const router = useRouter();
   const [whatsapp, setWhatsapp] = useState('');
   const [saved, setSaved] = useState(false);
+  const [activeTab, setActiveTab] = useState<'projetos' | 'vitrine' | 'automacoes'>('projetos');
 
   useEffect(() => {
-    // Proteção de Rota Simples
     const auth = localStorage.getItem('criativa_admin_auth');
     if (auth !== 'true') {
       router.push('/admin');
     }
 
-    // Carregar configurações locais
     const savedWa = localStorage.getItem('criativa_whatsapp');
     if (savedWa) setWhatsapp(savedWa);
   }, [router]);
@@ -50,14 +55,14 @@ export default function AdminDashboard() {
         </div>
 
         <nav className="flex-1 space-y-2">
-          <button className="w-full flex items-center gap-3 p-3 bg-white/10 text-white rounded-lg transition">
-            <Package size={18} className="text-[#FF3366]" /> Projetos
+          <button onClick={() => setActiveTab('projetos')} className={`w-full flex items-center gap-3 p-3 rounded-lg transition ${activeTab === 'projetos' ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/5'}`}>
+            <Package size={18} className={activeTab === 'projetos' ? 'text-[#FF3366]' : ''} /> Pedidos Personalizados
           </button>
-          <button className="w-full flex items-center gap-3 p-3 text-gray-400 hover:bg-white/5 hover:text-white rounded-lg transition">
-            <Users size={18} /> Clientes
+          <button onClick={() => setActiveTab('vitrine')} className={`w-full flex items-center gap-3 p-3 rounded-lg transition ${activeTab === 'vitrine' ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/5'}`}>
+            <Store size={18} className={activeTab === 'vitrine' ? 'text-[#E0829D]' : ''} /> Vitrine E-commerce
           </button>
-          <button className="w-full flex items-center gap-3 p-3 text-gray-400 hover:bg-white/5 hover:text-white rounded-lg transition">
-            <Settings size={18} className="text-[#8A2BE2]" /> Automações
+          <button onClick={() => setActiveTab('automacoes')} className={`w-full flex items-center gap-3 p-3 rounded-lg transition ${activeTab === 'automacoes' ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/5'}`}>
+            <Settings size={18} className={activeTab === 'automacoes' ? 'text-[#8A2BE2]' : ''} /> Automações
           </button>
         </nav>
 
@@ -69,16 +74,19 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <main className="flex-1 p-6 md:p-10 overflow-y-auto h-screen custom-scrollbar">
         <header className="mb-10">
-          <h1 className="text-3xl font-bold gradient-text">Visão Geral da Fábrica</h1>
-          <p className="text-gray-400 mt-2">Acompanhe seus orçamentos e configure os robôs.</p>
+          <h1 className="text-3xl font-bold gradient-text">
+            {activeTab === 'projetos' && 'Gestão de Projetos I.A.'}
+            {activeTab === 'vitrine' && 'Estoque da Vitrine'}
+            {activeTab === 'automacoes' && 'Configurações de Automação'}
+          </h1>
+          <p className="text-gray-400 mt-2">Controle total da sua fábrica digital.</p>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Tabela de Projetos */}
-          <div className="lg:col-span-2 space-y-4">
+        {/* TAB: PROJETOS */}
+        {activeTab === 'projetos' && (
+          <div className="space-y-4 max-w-4xl">
             <h3 className="text-xl font-bold flex items-center gap-2 border-b border-white/10 pb-3">
-              <Package size={20} className="text-[#E0829D]"/> Últimos Projetos Gerados
+              <Package size={20} className="text-[#FF3366]"/> Últimos Orçamentos Gerados
             </h3>
             
             <div className="glass-panel overflow-hidden">
@@ -106,14 +114,56 @@ export default function AdminDashboard() {
                   ))}
                 </tbody>
               </table>
-              <div className="p-4 text-center border-t border-white/5">
-                <p className="text-xs text-gray-500">Integração real com Supabase em breve.</p>
-              </div>
             </div>
           </div>
+        )}
 
-          {/* Automações / Configurações */}
-          <div className="space-y-4">
+        {/* TAB: VITRINE ECOMMERCE */}
+        {activeTab === 'vitrine' && (
+          <div className="space-y-6 max-w-4xl">
+            <div className="flex justify-between items-center border-b border-white/10 pb-3">
+              <h3 className="text-xl font-bold flex items-center gap-2">
+                <Store size={20} className="text-[#E0829D]"/> Produtos Prontos
+              </h3>
+              <button className="btn-primary py-2 px-4 text-sm flex items-center gap-2">
+                <Plus size={16} /> Novo Produto
+              </button>
+            </div>
+            
+            <div className="glass-panel overflow-hidden">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-white/5 text-gray-400">
+                  <tr>
+                    <th className="p-4">Produto</th>
+                    <th className="p-4">Preço de Venda</th>
+                    <th className="p-4">Estoque Físico</th>
+                    <th className="p-4">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {mockProducts.map((prod) => (
+                    <tr key={prod.id} className="hover:bg-white/5 transition">
+                      <td className="p-4 font-bold">{prod.name}</td>
+                      <td className="p-4 text-green-400">R$ {prod.price}</td>
+                      <td className="p-4">
+                        <span className={`px-2 py-1 rounded text-xs ${prod.stock > 5 ? 'bg-blue-500/20 text-blue-300' : 'bg-red-500/20 text-red-300'}`}>
+                          {prod.stock} un.
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <button className="text-gray-400 hover:text-white text-xs underline">Editar</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* TAB: AUTOMAÇÕES */}
+        {activeTab === 'automacoes' && (
+          <div className="space-y-4 max-w-md">
              <h3 className="text-xl font-bold flex items-center gap-2 border-b border-white/10 pb-3">
               <Settings size={20} className="text-[#8A2BE2]"/> Motor de Automação
             </h3>
@@ -121,10 +171,10 @@ export default function AdminDashboard() {
             <div className="glass-panel p-6 space-y-6">
               <div>
                 <label className="text-sm font-medium text-gray-300 flex items-center gap-2 mb-2">
-                  <Phone size={16} className="text-green-400"/> WhatsApp do Especialista (CTA)
+                  <Phone size={16} className="text-green-400"/> WhatsApp do Especialista
                 </label>
                 <p className="text-xs text-gray-500 mb-3">
-                  Este é o número que receberá os clientes vindos do botão "Falar com Especialista" na sala 360º.
+                  Número que receberá clientes da sala 360º.
                 </p>
                 <input 
                   type="text" 
@@ -139,12 +189,12 @@ export default function AdminDashboard() {
                 onClick={handleSaveSettings}
                 className="w-full btn-secondary border border-[#8A2BE2]/50 flex justify-center items-center gap-2 hover:bg-[#8A2BE2]/20"
               >
-                <Save size={18} /> {saved ? 'Salvo com sucesso!' : 'Salvar Configurações'}
+                <Save size={18} /> {saved ? 'Salvo com sucesso!' : 'Salvar'}
               </button>
             </div>
           </div>
+        )}
 
-        </div>
       </main>
     </div>
   );
