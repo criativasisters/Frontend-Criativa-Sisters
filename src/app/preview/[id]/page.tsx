@@ -32,6 +32,14 @@ export default function PreviewPage() {
   const colors = rawColors ? rawColors.split(',') : ['#8A2BE2'];
   const mainColor = colors[0];
 
+  // Pegando o número de WhatsApp configurado pelo Admin
+  const [adminPhone, setAdminPhone] = useState('5511999999999');
+
+  React.useEffect(() => {
+    const savedWa = localStorage.getItem('criativa_whatsapp');
+    if (savedWa) setAdminPhone(savedWa);
+  }, []);
+
   // Estados de Personalização do Usuário
   const [scalePercent, setScalePercent] = useState<number>(100);
   const [quantity, setQuantity] = useState<number>(1);
@@ -194,7 +202,7 @@ export default function PreviewPage() {
           
           <button 
             className="w-full btn-secondary flex items-center justify-center gap-2 border border-[#8A2BE2]/30 hover:border-[#8A2BE2]"
-            onClick={() => window.open(`https://wa.me/5511999999999?text=Olá, tenho dúvidas sobre o orçamento de R$${pricing.precoTotal} do projeto %23${id}.`, '_blank')}
+            onClick={() => window.open(`https://wa.me/${adminPhone}?text=Olá, tenho dúvidas sobre o orçamento de R$${pricing.precoTotal} do projeto %23${id}.`, '_blank')}
           >
             <MessageCircle size={20} className="text-[#8A2BE2]" />
             <span className="text-sm">Falar com Especialista</span>
