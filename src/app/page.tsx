@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowDown, CheckCircle, Star, MessageCircle, Printer, ShieldCheck, Zap } from 'lucide-react';
+import { ArrowDown, CheckCircle, Star, MessageCircle, Printer, ShieldCheck, Zap, Package } from 'lucide-react';
 
 export default function LandingPage() {
   const [isUploading, setIsUploading] = useState(false);
