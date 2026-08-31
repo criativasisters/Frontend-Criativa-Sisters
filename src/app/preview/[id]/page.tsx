@@ -205,6 +205,7 @@ export default function PreviewPage() {
 
           <div className="space-y-3 mb-6">
             <p className="text-sm font-bold text-gray-300">Dados para Envio & Aprovação</p>
+            <input type="text" placeholder="Seu Nome Completo" className="w-full bg-[#121212] border border-white/10 p-3 rounded text-white text-sm focus:border-[#FF3366] transition outline-none" required />
             <input type="text" placeholder="Seu WhatsApp (Ex: 11 99999-9999)" className="w-full bg-[#121212] border border-white/10 p-3 rounded text-white text-sm focus:border-[#FF3366] transition outline-none" required />
             <input type="email" placeholder="Seu E-mail" className="w-full bg-[#121212] border border-white/10 p-3 rounded text-white text-sm focus:border-[#FF3366] transition outline-none" required />
             <textarea placeholder="Detalhes opcionais (Se preenchido, passa por revisão humana antes de imprimir)" className="w-full bg-[#121212] border border-white/10 p-3 rounded text-white text-sm focus:border-[#FF3366] transition outline-none h-20 resize-none"></textarea>
