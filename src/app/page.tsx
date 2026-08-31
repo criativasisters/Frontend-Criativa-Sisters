@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowDown, CheckCircle, Star, MessageCircle, Printer, ShieldCheck, Zap, Package } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 export default function LandingPage() {
   const [isUploading, setIsUploading] = useState(false);
@@ -12,6 +13,29 @@ export default function LandingPage() {
   const router = useRouter();
 
   const createSectionRef = useRef<HTMLElement>(null);
+
+  // Estados Dinâmicos do Supabase (CMS Headless)
+  const [heroContent, setHeroContent] = useState({ title: 'Carregando...', subtitle: '', cta_text: '' });
+  const [creationContent, setCreationContent] = useState({ title: 'Carregando...', subtitle: '', cta_text: '' });
+  const [vitrineProducts, setVitrineProducts] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchCMSData = async () => {
+      // Puxando Textos
+      const { data: texts } = await supabase.from('landing_content').select('*');
+      if (texts) {
+        const hero = texts.find(t => t.id === 'hero_section');
+        const creation = texts.find(t => t.id === 'creation_section');
+        if (hero) setHeroContent(hero);
+        if (creation) setCreationContent(creation);
+      }
+      
+      // Puxando Produtos da Vitrine
+      const { data: prods } = await supabase.from('products').select('*').limit(6);
+      if (prods) setVitrineProducts(prods);
+    };
+    fetchCMSData();
+  }, []);
 
   // Lógica da Animação do Logo
   const [animStage, setAnimStage] = useState(0); // 0: Imprimindo, 1: Fixo grande, 2: Encolhido no topo
@@ -108,15 +132,15 @@ export default function LandingPage() {
 
         {/* Textos e CTA (Aparecem suavemente após a animação de imprimir, ou ficam fixos) */}
         <div className={`z-10 max-w-4xl w-full flex flex-col items-center justify-center gap-6 mt-4 transition-opacity duration-1000 ${animStage > 0 ? 'opacity-100' : 'opacity-0'}`}>
-          <h1 className="text-4xl md:text-6xl font-bold text-center leading-tight">
-            Transforme suas Ideias em <span className="gradient-text">Realidade Volumétrica</span>
+          <h1 className="text-4xl md:text-6xl font-bold text-center leading-tight gradient-text p-2">
+            {heroContent.title}
           </h1>
           <p className="text-xl text-gray-400 text-center max-w-2xl font-light">
-            A primeira fábrica digital impulsionada por IA. Envie uma foto e receba uma estátua física de altíssima precisão na sua casa.
+            {heroContent.subtitle}
           </p>
           
           <button onClick={scrollToCreation} className="btn-primary flex items-center gap-2 text-lg px-8 py-4 mt-4 animate-bounce shadow-[0_0_20px_rgba(255,51,102,0.5)]">
-            Iniciar Meu Projeto <ArrowDown size={20} />
+            {heroContent.cta_text} <ArrowDown size={20} />
           </button>
           
           {/* Mini imagens de artes */}
@@ -133,8 +157,8 @@ export default function LandingPage() {
       {/* SESSÃO 2: CRIAÇÃO (Onde faz o Upload) */}
       <section ref={createSectionRef} className="py-24 px-6 relative bg-gradient-to-b from-[#050505] to-[#0a0a0a]">
         <div className="max-w-4xl mx-auto glass-panel p-10 md:p-16 text-center border-[#8A2BE2]/20 shadow-[0_0_50px_rgba(138,43,226,0.1)]">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Crie Sua Peça Agora</h2>
-          <p className="text-gray-400 mb-10 text-lg">Nossa Inteligência Artificial calculará o volume, extrairá as cores e te dará o orçamento instantâneo.</p>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">{creationContent.title}</h2>
+          <p className="text-gray-400 mb-10 text-lg">{creationContent.subtitle}</p>
           
           <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleUpload} />
           
@@ -146,7 +170,7 @@ export default function LandingPage() {
             {isUploading ? (
               <span className="animate-pulse">{statusText}</span>
             ) : (
-              <>Subir Imagem e Ver Mágica <Printer size={24} /></>
+              <>{creationContent.cta_text} <Printer size={24} /></>
             )}
           </button>
           <p className="text-xs text-gray-500 mt-4">Formatos aceitos: JPG, PNG, WEBP. Tamanho max: 10MB.</p>
@@ -162,23 +186,27 @@ export default function LandingPage() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { name: 'Busto Heroico', price: 'R$ 149,90', img: 'hero' },
-              { name: 'Luminária Geométrica', price: 'R$ 89,90', img: 'lamp' },
-              { name: 'Mascote Corporativo', price: 'R$ 199,00', img: 'pet' }
-            ].map((prod, idx) => (
-              <div key={idx} className="glass-panel group overflow-hidden border-white/5 hover:border-[#FF3366]/50 transition-colors">
-                <div className="h-64 bg-[#111] flex items-center justify-center relative">
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10" />
-                  <Package size={64} className="text-gray-600 group-hover:text-[#FF3366] transition-colors z-0" />
+            {vitrineProducts.length === 0 ? (
+              <p className="col-span-3 text-center text-gray-500">Nenhum produto cadastrado na vitrine ainda.</p>
+            ) : (
+              vitrineProducts.map((prod) => (
+                <div key={prod.id} className="glass-panel group overflow-hidden border-white/5 hover:border-[#FF3366]/50 transition-colors">
+                  <div className="h-64 bg-[#111] flex items-center justify-center relative">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10" />
+                    {prod.image_url ? (
+                      <Image src={prod.image_url} alt={prod.name} fill className="object-cover z-0" />
+                    ) : (
+                      <Package size={64} className="text-gray-600 group-hover:text-[#FF3366] transition-colors z-0" />
+                    )}
+                  </div>
+                  <div className="p-6 relative z-20 -mt-12">
+                    <h3 className="text-xl font-bold mb-1">{prod.name}</h3>
+                    <p className="text-2xl font-black text-[#E0829D] mb-4">R$ {prod.price.toString().replace('.', ',')}</p>
+                    <button className="w-full btn-secondary">Comprar Agora</button>
+                  </div>
                 </div>
-                <div className="p-6 relative z-20 -mt-12">
-                  <h3 className="text-xl font-bold mb-1">{prod.name}</h3>
-                  <p className="text-2xl font-black text-[#E0829D] mb-4">{prod.price}</p>
-                  <button className="w-full btn-secondary">Comprar Agora</button>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </section>
