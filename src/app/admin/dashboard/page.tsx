@@ -24,10 +24,15 @@ interface LandingContent {
   cta_text: string;
 }
 
-const mockOrders = [
-  { id: 'proj_2035', status: 'Aguardando Pagamento', scale: '100%', qty: 1, price: '86,40', date: 'Hoje, 11:30' },
-  { id: 'proj_8842', status: 'Pago - Na Fila', scale: '50%', qty: 5, price: '124,50', date: 'Ontem, 15:20' }
-];
+interface Order {
+  id: string;
+  customer_name: string;
+  total_price: number;
+  scale_percent: number;
+  quantity: number;
+  status: string;
+  requires_human_review: boolean;
+}
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -36,6 +41,7 @@ export default function AdminDashboard() {
   // Estados Supabase
   const [products, setProducts] = useState<Product[]>([]);
   const [landingContent, setLandingContent] = useState<LandingContent[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [whatsapp, setWhatsapp] = useState('');
   const [saved, setSaved] = useState(false);
 
@@ -61,6 +67,9 @@ export default function AdminDashboard() {
 
     const { data: texts } = await supabase.from('landing_content').select('*');
     if (texts) setLandingContent(texts);
+
+    const { data: ords } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+    if (ords) setOrders(ords);
   };
 
   // Funções de Produto
@@ -155,11 +164,29 @@ export default function AdminDashboard() {
           <div className="glass-panel overflow-hidden max-w-4xl">
             <table className="w-full text-left text-sm">
               <thead className="bg-white/5 text-gray-400">
-                <tr><th className="p-4">ID</th><th className="p-4">Status</th><th className="p-4">Preço</th></tr>
+                <tr><th className="p-4">Cliente / ID</th><th className="p-4">Status</th><th className="p-4">Escala / Qtd</th><th className="p-4">Preço</th></tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {mockOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-white/5"><td className="p-4 font-mono text-[#8A2BE2]">{order.id}</td><td className="p-4">{order.status}</td><td className="p-4 font-bold">{order.price}</td></tr>
+                {orders.length === 0 && <tr><td colSpan={4} className="p-8 text-center text-gray-500">Nenhum pedido ainda.</td></tr>}
+                {orders.map((order) => (
+                  <tr key={order.id} className="hover:bg-white/5">
+                    <td className="p-4">
+                      <p className="font-bold">{order.customer_name}</p>
+                      <p className="font-mono text-xs text-[#8A2BE2]">{order.id.split('-')[0]}</p>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex flex-col gap-1 items-start">
+                        <span className={`px-2 py-1 rounded text-xs ${order.status.includes('Pago') ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'}`}>
+                          {order.status}
+                        </span>
+                        {order.requires_human_review && (
+                          <span className="px-2 py-1 rounded text-xs bg-red-500/20 text-red-300">Revisão Manual</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-4 text-gray-300">{order.scale_percent}% | {order.quantity}x</td>
+                    <td className="p-4 font-bold text-green-400">R$ {order.total_price}</td>
+                  </tr>
                 ))}
               </tbody>
             </table>

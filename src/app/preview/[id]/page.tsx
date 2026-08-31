@@ -81,6 +81,49 @@ export default function PreviewPage() {
     };
   }, [baseX, baseY, baseZ, scaleMultiplier, quantity]);
 
+  // Estados do Formulário de Checkout
+  const [formData, setFormData] = useState({ name: '', whatsapp: '', email: '', details: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState(false);
+
+  const handleCheckout = async () => {
+    if (!formData.name || !formData.whatsapp || !formData.email) {
+      alert("Preencha Nome, WhatsApp e E-mail para continuar.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    // Importação dinâmica do supabase para evitar erro de escopo (ou usar do import)
+    const { supabase } = await import('@/lib/supabase');
+
+    const { error } = await supabase.from('orders').insert([{
+      customer_name: formData.name,
+      customer_whatsapp: formData.whatsapp,
+      customer_email: formData.email,
+      customer_details: formData.details,
+      dimensions_x: parseFloat(currentX),
+      dimensions_y: parseFloat(currentY),
+      dimensions_z: parseFloat(currentZ),
+      scale_percent: scalePercent,
+      quantity: quantity,
+      colors: colors,
+      estimated_weight_g: parseFloat(pricing.peso),
+      total_price: parseFloat(pricing.precoTotal.replace(',', '.')),
+      status: 'Aguardando Pagamento',
+      requires_human_review: formData.details.trim().length > 0
+    }]);
+
+    setIsSubmitting(false);
+
+    if (error) {
+      alert("Houve um erro ao processar o pedido. Tente novamente.");
+      console.error(error);
+    } else {
+      setOrderSuccess(true);
+    }
+  };
+
   return (
     <main className="min-h-screen flex flex-col md:flex-row bg-[#050505] text-white">
       {/* 3D Viewer Section */}
@@ -203,18 +246,28 @@ export default function PreviewPage() {
             <span className="text-3xl font-bold gradient-text">R$ {pricing.precoTotal}</span>
           </div>
 
-          <div className="space-y-3 mb-6">
-            <p className="text-sm font-bold text-gray-300">Dados para Envio & Aprovação</p>
-            <input type="text" placeholder="Seu Nome Completo" className="w-full bg-[#121212] border border-white/10 p-3 rounded text-white text-sm focus:border-[#FF3366] transition outline-none" required />
-            <input type="text" placeholder="Seu WhatsApp (Ex: 11 99999-9999)" className="w-full bg-[#121212] border border-white/10 p-3 rounded text-white text-sm focus:border-[#FF3366] transition outline-none" required />
-            <input type="email" placeholder="Seu E-mail" className="w-full bg-[#121212] border border-white/10 p-3 rounded text-white text-sm focus:border-[#FF3366] transition outline-none" required />
-            <textarea placeholder="Detalhes opcionais (Se preenchido, passa por revisão humana antes de imprimir)" className="w-full bg-[#121212] border border-white/10 p-3 rounded text-white text-sm focus:border-[#FF3366] transition outline-none h-20 resize-none"></textarea>
-          </div>
+          {orderSuccess ? (
+            <div className="mb-6 p-4 bg-green-500/20 border border-green-500/50 rounded-lg text-center">
+              <CheckCircle className="text-green-400 mx-auto mb-2" size={32} />
+              <h4 className="font-bold text-white">Pedido Enviado!</h4>
+              <p className="text-sm text-green-200 mt-1">O administrador foi notificado e você receberá as instruções de pagamento em breve.</p>
+            </div>
+          ) : (
+            <div className="space-y-3 mb-6">
+              <p className="text-sm font-bold text-gray-300">Dados para Envio & Aprovação</p>
+              <input type="text" value={formData.name} onChange={e=>setFormData({...formData, name: e.target.value})} placeholder="Seu Nome Completo" className="w-full bg-[#121212] border border-white/10 p-3 rounded text-white text-sm focus:border-[#FF3366] transition outline-none" required />
+              <input type="text" value={formData.whatsapp} onChange={e=>setFormData({...formData, whatsapp: e.target.value})} placeholder="Seu WhatsApp (Ex: 11 99999-9999)" className="w-full bg-[#121212] border border-white/10 p-3 rounded text-white text-sm focus:border-[#FF3366] transition outline-none" required />
+              <input type="email" value={formData.email} onChange={e=>setFormData({...formData, email: e.target.value})} placeholder="Seu E-mail" className="w-full bg-[#121212] border border-white/10 p-3 rounded text-white text-sm focus:border-[#FF3366] transition outline-none" required />
+              <textarea value={formData.details} onChange={e=>setFormData({...formData, details: e.target.value})} placeholder="Detalhes opcionais (Se preenchido, passa por revisão humana antes de imprimir)" className="w-full bg-[#121212] border border-white/10 p-3 rounded text-white text-sm focus:border-[#FF3366] transition outline-none h-20 resize-none"></textarea>
+            </div>
+          )}
 
-          <button className="w-full btn-primary flex items-center justify-center gap-2 mb-3 shadow-[0_0_20px_rgba(255,51,102,0.3)]">
-            <Tag size={20} />
-            Finalizar Compra
-          </button>
+          {!orderSuccess && (
+            <button onClick={handleCheckout} disabled={isSubmitting} className="w-full btn-primary flex items-center justify-center gap-2 mb-3 shadow-[0_0_20px_rgba(255,51,102,0.3)] disabled:opacity-50">
+              <Tag size={20} />
+              {isSubmitting ? 'Processando...' : 'Finalizar Compra'}
+            </button>
+          )}
           
           <button 
             className="w-full btn-secondary flex items-center justify-center gap-2 border border-[#8A2BE2]/30 hover:border-[#8A2BE2]"
