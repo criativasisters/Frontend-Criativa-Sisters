@@ -166,8 +166,16 @@ export default function PreviewPage() {
           <div className="bg-[#121212] p-5 rounded-xl border border-white/5 mb-6 space-y-3">
             <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Métricas de Fatiamento (Tempo Real)</h3>
             <div className="flex justify-between items-center">
-              <span className="text-gray-400 text-sm">Dimensões (X, Y, Z)</span>
-              <span className="font-mono text-sm">{currentX} x {currentY} x {currentZ} cm</span>
+              <span className="text-gray-400 text-sm">Largura (L / X)</span>
+              <span className="font-mono text-sm">{currentX} cm</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-400 text-sm">Altura (A / Y)</span>
+              <span className="font-mono text-sm">{currentY} cm</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-400 text-sm">Profundidade (P / Z)</span>
+              <span className="font-mono text-sm">{currentZ} cm</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-400 text-sm">Peso Estimado (Material)</span>
@@ -187,12 +195,19 @@ export default function PreviewPage() {
 
         {/* Rodapé de Check-out e CTA Fixo */}
         <div className="p-6 bg-[#0a0a0a] border-t border-white/10 mt-auto">
-          <div className="flex justify-between items-end mb-4">
+          <div className="flex justify-between items-end mb-6">
             <div>
               <span className="block text-sm text-gray-400">Valor Total</span>
               <span className="block text-xs text-gray-600">Calculado por IA Generativa</span>
             </div>
             <span className="text-3xl font-bold gradient-text">R$ {pricing.precoTotal}</span>
+          </div>
+
+          <div className="space-y-3 mb-6">
+            <p className="text-sm font-bold text-gray-300">Dados para Envio & Aprovação</p>
+            <input type="text" placeholder="Seu WhatsApp (Ex: 11 99999-9999)" className="w-full bg-[#121212] border border-white/10 p-3 rounded text-white text-sm focus:border-[#FF3366] transition outline-none" required />
+            <input type="email" placeholder="Seu E-mail" className="w-full bg-[#121212] border border-white/10 p-3 rounded text-white text-sm focus:border-[#FF3366] transition outline-none" required />
+            <textarea placeholder="Detalhes opcionais (Se preenchido, passa por revisão humana antes de imprimir)" className="w-full bg-[#121212] border border-white/10 p-3 rounded text-white text-sm focus:border-[#FF3366] transition outline-none h-20 resize-none"></textarea>
           </div>
 
           <button className="w-full btn-primary flex items-center justify-center gap-2 mb-3 shadow-[0_0_20px_rgba(255,51,102,0.3)]">
