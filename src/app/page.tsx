@@ -70,21 +70,49 @@ export default function LandingPage() {
         body: formData,
       });
 
-      if (!res.ok) throw new Error("Falha ao gerar o modelo 3D.");
+      if (!res.ok) throw new Error("Falha ao enviar a imagem para a IA.");
 
-      setStatusText("Calculando Bounding Box...");
       const data = await res.json();
       
-      if (data.success && data.projectId) {
-        const queryParams = new URLSearchParams({
-          x: data.data.dimensions.x,
-          y: data.data.dimensions.y,
-          z: data.data.dimensions.z,
-          colors: data.data.colors.join(','),
-          modelUrl: data.data.modelUrl
-        }).toString();
+      if (data.success && data.taskId) {
+        setStatusText("Modelando a malha 3D... Isso pode levar 2 minutos.");
         
-        router.push(`/preview/${data.projectId}?${queryParams}`);
+        // Polling (Pesquisa assíncrona) a cada 3 segundos
+        const pollInterval = setInterval(async () => {
+          try {
+            const statusRes = await fetch(`${backendUrl}/api/status/${data.taskId}`);
+            const statusData = await statusRes.json();
+            
+            if (statusData.success) {
+              if (statusData.status === 'success') {
+                clearInterval(pollInterval);
+                setStatusText("Geometria finalizada! Abrindo preview...");
+                
+                // Em um cenário real, calcularíamos a bounding box do .glb gerado.
+                // Como ainda não baixamos o GLB no Node, vamos usar medidas padrão dinâmicas da IA
+                const queryParams = new URLSearchParams({
+                  x: "15.0", // Mock da Bounding Box (Ainda será refinado no slicer-engine)
+                  y: "15.0",
+                  z: "12.0",
+                  colors: data.colors.join(','),
+                  modelUrl: statusData.modelUrl
+                }).toString();
+                
+                router.push(`/preview/${data.taskId}?${queryParams}`);
+              } else if (statusData.status === 'failed' || statusData.status === 'cancelled') {
+                clearInterval(pollInterval);
+                alert("A IA encontrou um erro e falhou ao gerar o modelo.");
+                setIsUploading(false);
+              } else {
+                setStatusText(`Esculpindo... ${statusData.progress}%`);
+              }
+            }
+          } catch (e) {
+            console.error("Erro no polling:", e);
+          }
+        }, 3000);
+      } else {
+        throw new Error("Resposta inválida da API.");
       }
     } catch (error) {
       console.error(error);
