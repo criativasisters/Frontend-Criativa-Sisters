@@ -101,7 +101,10 @@ export default function PreviewPage() {
     // Importação dinâmica do supabase para evitar erro de escopo (ou usar do import)
     const { supabase } = await import('@/lib/supabase');
 
+    const { data: { session } } = await supabase.auth.getSession();
+
     const { error } = await supabase.from('orders').insert([{
+      user_id: session?.user?.id || null,
       customer_name: formData.name,
       customer_whatsapp: formData.whatsapp,
       customer_email: formData.email,
