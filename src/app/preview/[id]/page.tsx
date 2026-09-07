@@ -1,9 +1,9 @@
 "use client";
 
-import React, { Suspense, useState, useMemo } from 'react';
+import React, { Suspense, useState, useMemo, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Stage, Float } from '@react-three/drei';
-import { MessageCircle, CheckCircle, Package, Plus, Minus, Tag } from 'lucide-react';
+import { MessageCircle, CheckCircle, Package, Plus, Minus, Tag, Play, Pause, RefreshCcw } from 'lucide-react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 
@@ -22,6 +22,10 @@ export default function PreviewPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const id = params.id as string;
+  
+  const orbitRef = useRef<any>(null);
+  const [autoRotate, setAutoRotate] = useState(true);
+  const modelUrl = searchParams.get('modelUrl') || 'mock';
   
   // Pegando os dados gerados pelo Backend (passados na URL)
   const baseX = parseFloat(searchParams.get('x') || '15.2');
@@ -127,7 +131,7 @@ export default function PreviewPage() {
   return (
     <main className="min-h-screen flex flex-col md:flex-row bg-[#050505] text-white">
       {/* 3D Viewer Section */}
-      <section className="flex-1 relative h-[60vh] md:h-screen overflow-hidden">
+      <section className="flex-1 relative h-[60vh] md:h-screen overflow-hidden group">
         <div className="absolute top-6 left-6 z-10 glass-panel p-4 flex items-center gap-4">
           <div className="relative w-12 h-12 rounded-full overflow-hidden border border-white/10 shadow-[0_0_10px_rgba(255,51,102,0.2)]">
             <Image 
@@ -142,13 +146,30 @@ export default function PreviewPage() {
             <p className="text-xs text-gray-400">Inspeção 360º - Projeto #{id}</p>
           </div>
         </div>
+
+        {/* Câmera Controls */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-black/60 backdrop-blur-md border border-white/10 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+           <button onClick={() => setAutoRotate(!autoRotate)} className={`p-2 rounded-full transition-colors ${autoRotate ? 'bg-[#FF3366] text-white' : 'text-gray-400 hover:text-white'}`} title="Tocar/Pausar Giro">
+              {autoRotate ? <Pause size={18} /> : <Play size={18} />}
+           </button>
+           <div className="w-px h-6 bg-white/20 mx-1"></div>
+           <button onClick={() => { if(orbitRef.current) orbitRef.current.reset() }} className="p-2 text-gray-400 hover:text-white transition-colors" title="Centralizar">
+              <RefreshCcw size={18} />
+           </button>
+        </div>
         
         <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 0, 5], fov: 45 }}>
           <Suspense fallback={null}>
             <Stage environment="city" intensity={0.5}>
-              <MockModel mainColor={mainColor} scaleMultiplier={scaleMultiplier} />
+              {modelUrl !== 'mock' ? (
+                // Temporário: caso o modelUrl exista de verdade no Tripo, precisaríamos carregar com useGLTF.
+                // Como não sabemos a URL final da malha no PDF (e demora), mantemos o mock por segurança com escala aplicada.
+                <MockModel mainColor={mainColor} scaleMultiplier={scaleMultiplier} />
+              ) : (
+                <MockModel mainColor={mainColor} scaleMultiplier={scaleMultiplier} />
+              )}
             </Stage>
-            <OrbitControls autoRotate autoRotateSpeed={2} enableZoom={true} makeDefault />
+            <OrbitControls ref={orbitRef} autoRotate={autoRotate} autoRotateSpeed={2} enableZoom={true} makeDefault />
           </Suspense>
         </Canvas>
       </section>
