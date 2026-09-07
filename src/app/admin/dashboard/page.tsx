@@ -150,6 +150,11 @@ export default function AdminDashboard() {
     alert('Configurações salvas!');
   };
 
+  // ---------------- CONTENT ---------------- //
+  const saveLandingContent = async (id: string, field: string, value: string) => {
+    await supabase.from('landing_content').update({ [field]: value }).eq('id', id);
+  };
+
   return (
     <div className="min-h-screen bg-[#050505] flex">
       <aside className="w-64 bg-[#0a0a0a] border-r border-white/5 p-6 flex flex-col gap-2">
