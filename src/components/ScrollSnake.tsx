@@ -13,11 +13,9 @@ interface Spark {
   color: string;
 }
 
-interface TrailNode {
+interface PathNode {
   x: number;
   y: number;
-  alpha: number;
-  width: number;
 }
 
 export function ScrollSnake() {
@@ -34,142 +32,280 @@ export function ScrollSnake() {
     let height = (canvas.height = window.innerHeight);
 
     const sparks: Spark[] = [];
-    const trail: TrailNode[] = [];
-    const maxTrailNodes = 45;
+    const maxSparks = 60;
 
-    let targetProgress = 0;
-    let currentProgress = 0;
-    let scrollVelocity = 0;
+    // Rastreamento suave de scroll
+    let targetScrollY = window.scrollY;
+    let currentScrollY = window.scrollY;
     let lastScrollY = window.scrollY;
-    let idleTimer = 0;
+    let scrollVelocity = 0;
+    let time = 0;
+
+    // Gera o traçado em ziguezague no documento
+    // O traçado fica estritamente nas margens laterais e cruza apenas nos intervalos das seções
+    const buildPath = (): PathNode[] => {
+      const docHeight = Math.max(
+        document.documentElement.scrollHeight,
+        document.body.scrollHeight,
+        window.innerHeight * 4
+      );
+
+      // Margens seguras: longe do centro onde ficam os textos e cards
+      const margin = Math.min(100, Math.max(30, width * 0.05));
+      const leftX = margin;
+      const rightX = width - margin;
+
+      // Waypoints de ziguezague descendo pelo documento a cada ~350px
+      const waypoints: PathNode[] = [];
+      const step = 380;
+      let y = 140;
+      let isRight = false;
+
+      waypoints.push({ x: width * 0.5, y: 40 }); // Início no topo
+
+      while (y < docHeight) {
+        waypoints.push({
+          x: isRight ? rightX : leftX,
+          y: y
+        });
+        y += step;
+        isRight = !isRight;
+      }
+      waypoints.push({ x: width * 0.5, y: docHeight - 50 }); // Fim no rodapé
+
+      // Interpolação de curva suave (Catmull-Rom / Bézier) gerando centenas de nós densos
+      const densePath: PathNode[] = [];
+      const samplesPerSegment = 24;
+
+      for (let i = 0; i < waypoints.length - 1; i++) {
+        const p0 = waypoints[Math.max(0, i - 1)];
+        const p1 = waypoints[i];
+        const p2 = waypoints[i + 1];
+        const p3 = waypoints[Math.min(waypoints.length - 1, i + 2)];
+
+        for (let t = 0; t < samplesPerSegment; t++) {
+          const u = t / samplesPerSegment;
+          const u2 = u * u;
+          const u3 = u2 * u;
+
+          // Spline Catmull-Rom
+          const x =
+            0.5 *
+            (2 * p1.x +
+              (-p0.x + p2.x) * u +
+              (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * u2 +
+              (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * u3);
+
+          const y =
+            0.5 *
+            (2 * p1.y +
+              (-p0.y + p2.y) * u +
+              (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * u2 +
+              (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * u3);
+
+          densePath.push({ x, y });
+        }
+      }
+      densePath.push(waypoints[waypoints.length - 1]);
+
+      return densePath;
+    };
+
+    let densePath = buildPath();
 
     const handleResize = () => {
       if (!canvas) return;
       width = canvas.width = window.innerWidth;
       height = canvas.height = window.innerHeight;
+      densePath = buildPath();
     };
 
     const handleScroll = () => {
-      const scrollY = window.scrollY;
-      const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-      targetProgress = Math.min(1, Math.max(0, scrollY / maxScroll));
-      scrollVelocity = Math.abs(scrollY - lastScrollY);
-      lastScrollY = scrollY;
+      targetScrollY = window.scrollY;
+      scrollVelocity = Math.abs(window.scrollY - lastScrollY);
+      lastScrollY = window.scrollY;
     };
 
     window.addEventListener("resize", handleResize, { passive: true });
     window.addEventListener("scroll", handleScroll, { passive: true });
 
-    // Ponto no caminho em ziguezague (margens esquerda e direita para não sobrepor o centro)
-    const getFilamentPosition = (prog: number, time: number) => {
-      // 5 ciclos completos de zigzag ao longo da página inteira
-      const wave = Math.sin(prog * Math.PI * 8 + time * 0.8);
-      
-      // Margens dinâmicas: fica nos terços laterais
-      const sideMargin = Math.min(140, width * 0.08);
-      const isRight = wave > 0;
-      const edge = isRight ? width - sideMargin : sideMargin;
-      const x = edge + Math.sin(prog * 20 + time * 1.5) * (sideMargin * 0.45);
-      
-      // Y mapeado verticalmente na tela com leve onda
-      const baseScreenY = 100 + prog * (height - 200);
-      const y = Math.min(height - 40, Math.max(40, baseScreenY + Math.cos(prog * 12 + time) * 35));
-
-      return { x, y };
-    };
-
-    const spawnSparks = (x: number, y: number, count: number, intensity: number) => {
+    const spawnSparks = (x: number, y: number, count: number) => {
       const palette = [
         "rgba(255, 51, 102, ",  // Magenta Shock
         "rgba(138, 43, 226, ", // Violeta Cósmico
         "rgba(224, 130, 157, ", // Rosa Metálico
-        "rgba(255, 255, 255, "  // Branco Luz
+        "rgba(255, 255, 255, "  // Luz Branca
       ];
 
       for (let i = 0; i < count; i++) {
+        if (sparks.length >= maxSparks) break;
         const angle = Math.random() * Math.PI * 2;
-        const speed = (0.6 + Math.random() * 2.2) * (1 + intensity * 0.05);
+        const speed = 0.8 + Math.random() * 2.5;
         sparks.push({
           x,
           y,
           vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed - (0.4 + Math.random() * 0.8), // sobe levemente
-          size: 1 + Math.random() * 2.8,
-          alpha: 0.8 + Math.random() * 0.2,
-          decay: 0.015 + Math.random() * 0.025,
+          vy: Math.sin(angle) * speed - 0.6,
+          size: 1.2 + Math.random() * 2.4,
+          alpha: 0.9,
+          decay: 0.02 + Math.random() * 0.03,
           color: palette[Math.floor(Math.random() * palette.length)]
         });
       }
     };
 
-    let time = 0;
-
     const render = () => {
-      time += 0.02;
-      idleTimer += 0.016;
+      time += 0.025;
 
-      // Amortecimento suave na posição (lerp)
-      currentProgress += (targetProgress - currentProgress) * 0.08;
-      scrollVelocity *= 0.92;
+      // Suavização do scroll com lerp
+      currentScrollY += (targetScrollY - currentScrollY) * 0.12;
+      scrollVelocity *= 0.9;
 
       ctx.clearRect(0, 0, width, height);
 
-      const headPos = getFilamentPosition(currentProgress, time);
+      const docHeight = Math.max(
+        document.documentElement.scrollHeight,
+        document.body.scrollHeight,
+        window.innerHeight
+      );
+      const maxScroll = Math.max(1, docHeight - window.innerHeight);
 
-      // Atualiza trail da extrusão
-      trail.unshift({
-        x: headPos.x,
-        y: headPos.y,
-        alpha: 1,
-        width: 3.5 + Math.min(scrollVelocity * 0.2, 5)
-      });
+      // Posição alvo do bico extrusor no documento:
+      // Fica visível na altura do viewport (cerca de 55% da altura da tela)
+      const targetDocY = Math.min(
+        docHeight - 60,
+        Math.max(60, currentScrollY + window.innerHeight * 0.55)
+      );
 
-      if (trail.length > maxTrailNodes) {
-        trail.pop();
+      // Encontra o índice no caminho correspondente a essa profundidade Y
+      let headIndex = 0;
+      for (let i = 0; i < densePath.length; i++) {
+        if (densePath[i].y <= targetDocY) {
+          headIndex = i;
+        } else {
+          break;
+        }
       }
 
-      // Desenha o filamento extrudado (trail luminoso em curvas Bézier)
-      if (trail.length > 2) {
+      // Se estamos no início absoluto, pelo menos 1 ponto
+      headIndex = Math.max(1, headIndex);
+
+      // DESENHA O FILAMENTO EXTRUDADO (De 0 até headIndex)
+      // Conforme o scroll sobe ou desce, a linha é desenhada ou desfeita em tempo real!
+      if (headIndex > 1) {
         ctx.save();
-        for (let i = 0; i < trail.length - 1; i++) {
-          const p1 = trail[i];
-          const p2 = trail[i + 1];
-          const tAlpha = (1 - i / trail.length);
 
-          // Brilho externo neon (Magenta -> Violeta)
+        // 1. Camada de Brilho Neon Externo (Magenta e Violeta)
+        for (let i = 0; i < headIndex - 1; i += 2) {
+          const pt1 = densePath[i];
+          const pt2 = densePath[Math.min(i + 2, headIndex)];
+
+          // Converte coordenada do documento para coordenada da tela (viewport)
+          const sY1 = pt1.y - currentScrollY;
+          const sY2 = pt2.y - currentScrollY;
+
+          // Culling: só renderiza se estiver próximo do viewport
+          if (sY1 < -100 && sY2 < -100) continue;
+          if (sY1 > height + 100 && sY2 > height + 100) continue;
+
+          // Leve balanço orgânico para parecer viva
+          const sway1 = Math.sin(time * 2 + i * 0.08) * 3;
+          const sway2 = Math.sin(time * 2 + (i + 2) * 0.08) * 3;
+
+          const prog = i / headIndex;
+          const colorGrad = (i / 4) % 2 === 0 ? "#FF3366" : "#8A2BE2";
+
           ctx.beginPath();
-          ctx.moveTo(p1.x, p1.y);
-          ctx.lineTo(p2.x, p2.y);
-          ctx.strokeStyle = i % 2 === 0 
-            ? `rgba(255, 51, 102, ${tAlpha * 0.45})` 
-            : `rgba(138, 43, 226, ${tAlpha * 0.45})`;
-          ctx.lineWidth = p1.width * 2.5;
+          ctx.moveTo(pt1.x + sway1, sY1);
+          ctx.lineTo(pt2.x + sway2, sY2);
+          ctx.strokeStyle = colorGrad;
+          ctx.lineWidth = 4.5;
           ctx.lineCap = "round";
-          ctx.shadowBlur = 18;
-          ctx.shadowColor = "#FF3366";
-          ctx.stroke();
-
-          // Núcleo brilhante fino
-          ctx.beginPath();
-          ctx.moveTo(p1.x, p1.y);
-          ctx.lineTo(p2.x, p2.y);
-          ctx.strokeStyle = `rgba(255, 230, 245, ${tAlpha * 0.85})`;
-          ctx.lineWidth = p1.width * 0.7;
-          ctx.shadowBlur = 6;
-          ctx.shadowColor = "#FFF";
+          ctx.shadowBlur = 16;
+          ctx.shadowColor = colorGrad;
+          ctx.globalAlpha = 0.55 + prog * 0.35; // Mais brilhante na ponta
           ctx.stroke();
         }
+
+        // 2. Camada do Núcleo Incandescente (Fio de Luz Branca/Rosa)
+        ctx.shadowBlur = 4;
+        ctx.shadowColor = "#FFFFFF";
+        ctx.globalAlpha = 0.85;
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+
+        let started = false;
+        for (let i = 0; i <= headIndex; i += 2) {
+          const pt = densePath[i];
+          const sY = pt.y - currentScrollY;
+
+          if (sY < -120 || sY > height + 120) {
+            started = false;
+            continue;
+          }
+
+          const sway = Math.sin(time * 2 + i * 0.08) * 3;
+
+          if (!started) {
+            ctx.moveTo(pt.x + sway, sY);
+            started = true;
+          } else {
+            ctx.lineTo(pt.x + sway, sY);
+          }
+        }
+        ctx.strokeStyle = "#FFF2F6";
+        ctx.stroke();
         ctx.restore();
       }
 
-      // Spawn de partículas quando rola ou em idle suave
-      if (scrollVelocity > 0.5) {
-        spawnSparks(headPos.x, headPos.y, Math.min(4, Math.ceil(scrollVelocity * 0.4)), scrollVelocity);
-      } else if (Math.random() < 0.25) {
-        spawnSparks(headPos.x, headPos.y, 1, 0.2);
+      // POSIÇÃO DA CABEÇA / BICO EXTRUSOR
+      const headPt = densePath[headIndex];
+      const headScreenY = headPt.y - currentScrollY;
+      const headSway = Math.sin(time * 2 + headIndex * 0.08) * 3;
+      const headScreenX = headPt.x + headSway;
+
+      // Se a cabeça estiver na tela, desenha o bico luminoso e gera faíscas
+      if (headScreenY >= -50 && headScreenY <= height + 50) {
+        ctx.save();
+        const pulse = 1 + Math.sin(time * 5) * 0.2;
+
+        // Aura radial intensa
+        const grad = ctx.createRadialGradient(
+          headScreenX,
+          headScreenY,
+          0,
+          headScreenX,
+          headScreenY,
+          32 * pulse
+        );
+        grad.addColorStop(0, "rgba(255, 255, 255, 0.95)");
+        grad.addColorStop(0.25, "rgba(255, 51, 102, 0.8)");
+        grad.addColorStop(0.6, "rgba(138, 43, 226, 0.35)");
+        grad.addColorStop(1, "rgba(0, 0, 0, 0)");
+
+        ctx.beginPath();
+        ctx.arc(headScreenX, headScreenY, 32 * pulse, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        // Ponto central branco
+        ctx.beginPath();
+        ctx.arc(headScreenX, headScreenY, 4.5, 0, Math.PI * 2);
+        ctx.fillStyle = "#FFFFFF";
+        ctx.shadowBlur = 18;
+        ctx.shadowColor = "#FF3366";
+        ctx.fill();
+        ctx.restore();
+
+        // Geração de faíscas quando em movimento ou idle
+        if (scrollVelocity > 1) {
+          spawnSparks(headScreenX, headScreenY, Math.min(4, Math.ceil(scrollVelocity * 0.3)));
+        } else if (Math.random() < 0.2) {
+          spawnSparks(headScreenX, headScreenY, 1);
+        }
       }
 
-      // Desenha e atualiza as partículas de faísca
+      // ATUALIZA E DESENHA AS FAÍSCAS (Sparks)
       for (let i = sparks.length - 1; i >= 0; i--) {
         const s = sparks[i];
         s.x += s.vx;
@@ -189,29 +325,6 @@ export function ScrollSnake() {
         ctx.fill();
       }
 
-      // Bico Extrusor / Cabeça Luminosa 3D
-      ctx.save();
-      const pulse = 1 + Math.sin(time * 6) * 0.18;
-      const headGlow = ctx.createRadialGradient(headPos.x, headPos.y, 0, headPos.x, headPos.y, 28 * pulse);
-      headGlow.addColorStop(0, "rgba(255, 255, 255, 0.95)");
-      headGlow.addColorStop(0.25, "rgba(255, 51, 102, 0.75)");
-      headGlow.addColorStop(0.6, "rgba(138, 43, 226, 0.35)");
-      headGlow.addColorStop(1, "rgba(0, 0, 0, 0)");
-
-      ctx.beginPath();
-      ctx.arc(headPos.x, headPos.y, 28 * pulse, 0, Math.PI * 2);
-      ctx.fillStyle = headGlow;
-      ctx.fill();
-
-      // Centro brilhante
-      ctx.beginPath();
-      ctx.arc(headPos.x, headPos.y, 4, 0, Math.PI * 2);
-      ctx.fillStyle = "#FFFFFF";
-      ctx.shadowBlur = 15;
-      ctx.shadowColor = "#FF3366";
-      ctx.fill();
-      ctx.restore();
-
       animId = requestAnimationFrame(render);
     };
 
@@ -227,7 +340,7 @@ export function ScrollSnake() {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 w-full h-full pointer-events-none z-[8]"
+      className="fixed inset-0 w-full h-full pointer-events-none z-[4]"
       style={{ mixBlendMode: "screen" }}
     />
   );
