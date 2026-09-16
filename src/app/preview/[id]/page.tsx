@@ -3,9 +3,10 @@
 import React, { Suspense, useState, useMemo, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Stage, Float } from '@react-three/drei';
-import { MessageCircle, CheckCircle, Package, Plus, Minus, Tag, Play, Pause, RefreshCcw } from 'lucide-react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { MessageCircle, CheckCircle, Package, Plus, Minus, Tag, Play, Pause, RefreshCcw, ShoppingBag, CreditCard } from 'lucide-react';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { useCart } from '@/contexts/CartContext';
 
 function MockModel({ mainColor, scaleMultiplier }: { mainColor: string, scaleMultiplier: number }) {
   return (
@@ -85,49 +86,27 @@ export default function PreviewPage() {
     };
   }, [baseX, baseY, baseZ, scaleMultiplier, quantity]);
 
-  // Estados do Formulário de Checkout
-  const [formData, setFormData] = useState({ name: '', whatsapp: '', email: '', details: '' });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [orderSuccess, setOrderSuccess] = useState(false);
+  const { addToCart } = useCart();
+  const router = useRouter();
 
-  const handleCheckout = async () => {
-    if (!formData.name || !formData.whatsapp || !formData.email) {
-      alert("Preencha Nome, WhatsApp e E-mail para continuar.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    
-    // Importação dinâmica do supabase para evitar erro de escopo (ou usar do import)
-    const { supabase } = await import('@/lib/supabase');
-
-    const { data: { session } } = await supabase.auth.getSession();
-
-    const { error } = await supabase.from('orders').insert([{
-      user_id: session?.user?.id || null,
-      customer_name: formData.name,
-      customer_whatsapp: formData.whatsapp,
-      customer_email: formData.email,
-      customer_details: formData.details,
-      dimensions_x: parseFloat(currentX),
-      dimensions_y: parseFloat(currentY),
-      dimensions_z: parseFloat(currentZ),
-      scale_percent: scalePercent,
+  const handleAddToCart = (redirectCheckout = false) => {
+    addToCart({
+      id: id,
+      name: `Estátua Personalizada IA #${id.substring(0,6)}`,
+      price: parseFloat(pricing.precoTotal.replace(',', '.')),
       quantity: quantity,
+      image_url: '/logos/logo-color-dark.jpg',
+      type: 'ai_model',
+      weight_g: parseFloat(pricing.peso),
+      scale_percent: scalePercent,
+      dimensions: { x: parseFloat(currentX), y: parseFloat(currentY), z: parseFloat(currentZ) },
       colors: colors,
-      estimated_weight_g: parseFloat(pricing.peso),
-      total_price: parseFloat(pricing.precoTotal.replace(',', '.')),
-      status: 'Aguardando Pagamento',
-      requires_human_review: formData.details.trim().length > 0
-    }]);
-
-    setIsSubmitting(false);
-
-    if (error) {
-      alert("Houve um erro ao processar o pedido. Tente novamente.");
-      console.error(error);
+    });
+    
+    if (redirectCheckout) {
+      router.push('/checkout');
     } else {
-      setOrderSuccess(true);
+      alert('Peça adicionada ao carrinho!');
     }
   };
 
@@ -262,7 +241,7 @@ export default function PreviewPage() {
 
         {/* Rodapé de Check-out e CTA Fixo */}
         <div className="p-6 bg-[#0a0a0a] border-t border-white/10 mt-auto">
-          <div className="flex justify-between items-end mb-6">
+          <div className="flex justify-between items-end mb-8">
             <div>
               <span className="block text-sm text-gray-400">Valor Total</span>
               <span className="block text-xs text-gray-600">Calculado por IA Generativa</span>
@@ -270,36 +249,23 @@ export default function PreviewPage() {
             <span className="text-3xl font-bold gradient-text">R$ {pricing.precoTotal}</span>
           </div>
 
-          {orderSuccess ? (
-            <div className="mb-6 p-4 bg-green-500/20 border border-green-500/50 rounded-lg text-center">
-              <CheckCircle className="text-green-400 mx-auto mb-2" size={32} />
-              <h4 className="font-bold text-white">Pedido Enviado!</h4>
-              <p className="text-sm text-green-200 mt-1">O administrador foi notificado e você receberá as instruções de pagamento em breve.</p>
-            </div>
-          ) : (
-            <div className="space-y-3 mb-6">
-              <p className="text-sm font-bold text-gray-300">Dados para Envio & Aprovação</p>
-              <input type="text" value={formData.name} onChange={e=>setFormData({...formData, name: e.target.value})} placeholder="Seu Nome Completo" className="w-full bg-[#121212] border border-white/10 p-3 rounded text-white text-sm focus:border-[#FF3366] transition outline-none" required />
-              <input type="text" value={formData.whatsapp} onChange={e=>setFormData({...formData, whatsapp: e.target.value})} placeholder="Seu WhatsApp (Ex: 11 99999-9999)" className="w-full bg-[#121212] border border-white/10 p-3 rounded text-white text-sm focus:border-[#FF3366] transition outline-none" required />
-              <input type="email" value={formData.email} onChange={e=>setFormData({...formData, email: e.target.value})} placeholder="Seu E-mail" className="w-full bg-[#121212] border border-white/10 p-3 rounded text-white text-sm focus:border-[#FF3366] transition outline-none" required />
-              <textarea value={formData.details} onChange={e=>setFormData({...formData, details: e.target.value})} placeholder="Detalhes opcionais (Se preenchido, passa por revisão humana antes de imprimir)" className="w-full bg-[#121212] border border-white/10 p-3 rounded text-white text-sm focus:border-[#FF3366] transition outline-none h-20 resize-none"></textarea>
-            </div>
-          )}
-
-          {!orderSuccess && (
-            <button onClick={handleCheckout} disabled={isSubmitting} className="w-full btn-primary flex items-center justify-center gap-2 mb-3 shadow-[0_0_20px_rgba(255,51,102,0.3)] disabled:opacity-50">
-              <Tag size={20} />
-              {isSubmitting ? 'Processando...' : 'Finalizar Compra'}
+          <div className="space-y-3">
+            <button onClick={() => handleAddToCart(true)} className="w-full btn-primary flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,51,102,0.3)]">
+              <CreditCard size={20} /> Comprar Agora
             </button>
-          )}
-          
-          <button 
-            className="w-full btn-secondary flex items-center justify-center gap-2 border border-[#8A2BE2]/30 hover:border-[#8A2BE2]"
-            onClick={() => window.open(`https://wa.me/${adminPhone}?text=Olá, tenho dúvidas sobre o orçamento de R$${pricing.precoTotal} do projeto %23${id}.`, '_blank')}
-          >
-            <MessageCircle size={20} className="text-[#8A2BE2]" />
-            <span className="text-sm">Falar com Especialista</span>
-          </button>
+
+            <button onClick={() => handleAddToCart(false)} className="w-full btn-secondary flex items-center justify-center gap-2 border border-white/20 hover:border-white">
+              <ShoppingBag size={20} /> Adicionar ao Carrinho
+            </button>
+            
+            <button 
+              className="w-full btn-secondary flex items-center justify-center gap-2 border border-[#8A2BE2]/30 hover:border-[#8A2BE2] mt-4"
+              onClick={() => window.open(`https://wa.me/${adminPhone}?text=Olá, tenho dúvidas sobre o orçamento de R$${pricing.precoTotal} do projeto %23${id}.`, '_blank')}
+            >
+              <MessageCircle size={20} className="text-[#8A2BE2]" />
+              <span className="text-sm text-gray-300">Falar com Especialista</span>
+            </button>
+          </div>
         </div>
       </section>
     </main>

@@ -5,8 +5,10 @@ import Link from 'next/link';
 import { ShoppingCart, Bell, User, Heart, X, LogIn, Menu } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Image from 'next/image';
+import { useCart } from '@/contexts/CartContext';
 
 export default function Navbar() {
+  const { items } = useCart();
   const [user, setUser] = useState<any>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
@@ -70,6 +72,11 @@ export default function Navbar() {
           
           <Link href="/carrinho" className="text-gray-400 hover:text-[#E0829D] transition relative">
             <ShoppingCart size={22} />
+            {items.length > 0 && (
+              <span className="absolute -top-2 -right-2 w-4 h-4 bg-[#E0829D] text-white text-[10px] font-bold flex items-center justify-center rounded-full">
+                {items.length}
+              </span>
+            )}
           </Link>
 
           {user ? (

@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Printer, Package, Zap, ShieldCheck, Star, MessageCircle, Play, X, ShoppingBag } from 'lucide-react';
 import { supabase } from "@/lib/supabase";
+import { useCart } from '@/contexts/CartContext';
 
 export default function Home() {
+  const { addToCart } = useCart();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const createSectionRef = useRef<HTMLElement>(null);
@@ -261,7 +263,18 @@ export default function Home() {
                         </button>
                       </div>
                       <p className="text-2xl font-black text-[#E0829D] mb-4">R$ {prod.price.toString().replace('.', ',')}</p>
-                      <button className="w-full btn-secondary">Comprar Agora</button>
+                      <button onClick={() => {
+                        addToCart({
+                          id: prod.id,
+                          name: prod.name,
+                          price: prod.price,
+                          quantity: 1,
+                          image_url: prod.image_url || '',
+                          type: 'product',
+                          weight_g: 250 // Estimativa média para produtos da vitrine
+                        });
+                        alert('Adicionado ao carrinho!');
+                      }} className="w-full btn-secondary">Adicionar ao Carrinho</button>
                     </div>
                   </div>
                 ))
