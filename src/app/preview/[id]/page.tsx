@@ -2,11 +2,20 @@
 
 import React, { Suspense, useState, useMemo, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Stage, Float } from '@react-three/drei';
+import { OrbitControls, Stage, Float, useGLTF } from '@react-three/drei';
 import { MessageCircle, CheckCircle, Package, Plus, Minus, Tag, Play, Pause, RefreshCcw, ShoppingBag, CreditCard } from 'lucide-react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useCart } from '@/contexts/CartContext';
+
+function RealModel({ url, scaleMultiplier }: { url: string; scaleMultiplier: number }) {
+  const { scene } = useGLTF(url);
+  return (
+    <Float speed={1.5} rotationIntensity={1} floatIntensity={2}>
+      <primitive object={scene} scale={[scaleMultiplier, scaleMultiplier, scaleMultiplier]} />
+    </Float>
+  );
+}
 
 function MockModel({ mainColor, scaleMultiplier }: { mainColor: string, scaleMultiplier: number }) {
   return (
@@ -143,10 +152,8 @@ export default function PreviewPage() {
         <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 0, 5], fov: 45 }}>
           <Suspense fallback={null}>
             <Stage environment="city" intensity={0.5}>
-              {modelUrl !== 'mock' ? (
-                // Temporário: caso o modelUrl exista de verdade no Tripo, precisaríamos carregar com useGLTF.
-                // Como não sabemos a URL final da malha no PDF (e demora), mantemos o mock por segurança com escala aplicada.
-                <MockModel mainColor={mainColor} scaleMultiplier={scaleMultiplier} />
+              {modelUrl && modelUrl !== 'mock' && modelUrl.startsWith('http') ? (
+                <RealModel url={modelUrl} scaleMultiplier={scaleMultiplier} />
               ) : (
                 <MockModel mainColor={mainColor} scaleMultiplier={scaleMultiplier} />
               )}

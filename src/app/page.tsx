@@ -80,7 +80,10 @@ export default function Home() {
         body: formData,
       });
 
-      if (!res.ok) throw new Error("Falha ao enviar a imagem para a IA.");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `Erro no servidor (${res.status})`);
+      }
 
       const data = await res.json();
       
@@ -102,7 +105,7 @@ export default function Home() {
                   y: "15.0",
                   z: "12.0",
                   colors: data.colors.join(','),
-                  modelUrl: statusData.modelUrl
+                  modelUrl: statusData.modelUrl || 'mock'
                 }).toString();
                 
                 router.push(`/preview/${data.taskId}?${queryParams}`);
@@ -119,11 +122,11 @@ export default function Home() {
           }
         }, 3000);
       } else {
-        throw new Error("Resposta inválida da API.");
+        throw new Error(data.error || "Resposta inválida da API.");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert("Houve um erro no processamento. Verifique se o Backend está rodando.");
+      alert(error.message || "Houve um erro no processamento. Verifique se o Backend está rodando.");
       setIsUploading(false);
     }
   };
