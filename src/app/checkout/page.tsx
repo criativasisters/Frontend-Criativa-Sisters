@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { supabase } from '@/lib/supabase';
-import { Truck, Tag, CreditCard, Lock, CheckCircle } from 'lucide-react';
+import { Truck, Tag, CreditCard, Lock, CheckCircle, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function CheckoutPage() {
@@ -139,8 +139,13 @@ export default function CheckoutPage() {
     }
   };
 
+  useEffect(() => {
+    if (items.length === 0 && !orderComplete) {
+      router.push('/carrinho');
+    }
+  }, [items.length, orderComplete, router]);
+
   if (items.length === 0 && !orderComplete) {
-    router.push('/carrinho');
     return null;
   }
 

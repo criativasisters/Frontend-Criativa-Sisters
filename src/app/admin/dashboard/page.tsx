@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Box, Layers, Settings, Phone, Save, Edit, Plus, Package, DollarSign, Download, Image as ImageIcon, Video, Trash } from 'lucide-react';
+import { Box, Layers, Settings, Phone, Save, Edit, Plus, Package, DollarSign, Download, Image as ImageIcon, Video, Trash, TrendingUp, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import * as XLSX from 'xlsx';
 import Image from 'next/image';
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'financeiro' | 'vitrine' | 'landing' | 'stories' | 'automacoes'>('financeiro');
+  const [activeTab, setActiveTab] = useState<'financeiro' | 'vitrine' | 'landing' | 'stories' | 'automacoes' | 'lucro'>('financeiro');
   
   // Supabase States
   const [orders, setOrders] = useState<any[]>([]);
@@ -155,11 +155,43 @@ export default function AdminDashboard() {
     await supabase.from('landing_content').update({ [field]: value }).eq('id', id);
   };
 
+  // ---------------- CALCULADORA DE LUCRO ---------------- //
+  const [custoConfig, setCustoConfig] = useState({
+    pla_por_grama: 0.12,
+    energia_por_hora: 0.80,
+    horas_por_100g: 2.5,
+    mao_de_obra_por_pedido: 5.00,
+    taxa_stripe_pct: 3.99,
+    taxa_stripe_fixo: 0.39,
+    frete_responsabilidade_pct: 0, // % do frete custeado pela empresa (0 = cliente paga tudo)
+  });
+
+  const calcularLucro = (order: any) => {
+    const receita = Number(order.total_price || 0);
+    const weightG = Number(order.estimated_weight_g || 200);
+
+    const custoMaterial = weightG * custoConfig.pla_por_grama;
+    const custoEnergia = (weightG / 100) * custoConfig.horas_por_100g * custoConfig.energia_por_hora;
+    const custoMaoDeObra = custoConfig.mao_de_obra_por_pedido;
+    const taxaStripe = (receita * (custoConfig.taxa_stripe_pct / 100)) + custoConfig.taxa_stripe_fixo;
+    const custoTotal = custoMaterial + custoEnergia + custoMaoDeObra + taxaStripe;
+    const lucroLiquido = receita - custoTotal;
+    const margemPct = receita > 0 ? (lucroLiquido / receita) * 100 : 0;
+
+    return { receita, custoMaterial, custoEnergia, custoMaoDeObra, taxaStripe, custoTotal, lucroLiquido, margemPct };
+  };
+
+  const lucroGlobal = orders.reduce((acc, o) => {
+    const l = calcularLucro(o);
+    return { receita: acc.receita + l.receita, custo: acc.custo + l.custoTotal, lucro: acc.lucro + l.lucroLiquido };
+  }, { receita: 0, custo: 0, lucro: 0 });
+
   return (
     <div className="min-h-screen bg-[#050505] flex">
       <aside className="w-64 bg-[#0a0a0a] border-r border-white/5 p-6 flex flex-col gap-2">
         <div className="mb-8 font-bold text-xl gradient-text tracking-wider">CRIATIVA SISTERS<br/>ADMIN</div>
         <button onClick={() => setActiveTab('financeiro')} className={`flex items-center gap-3 p-3 rounded-lg text-sm transition-colors ${activeTab === 'financeiro' ? 'bg-[#FF3366]/10 text-[#FF3366]' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}><DollarSign size={18}/> Financeiro & Pedidos</button>
+        <button onClick={() => setActiveTab('lucro')} className={`flex items-center gap-3 p-3 rounded-lg text-sm transition-colors ${activeTab === 'lucro' ? 'bg-green-500/10 text-green-400' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}><TrendingUp size={18}/> Lucro Real</button>
         <button onClick={() => setActiveTab('landing')} className={`flex items-center gap-3 p-3 rounded-lg text-sm transition-colors ${activeTab === 'landing' ? 'bg-[#FF3366]/10 text-[#FF3366]' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}><ImageIcon size={18}/> Banners e Textos</button>
         <button onClick={() => setActiveTab('stories')} className={`flex items-center gap-3 p-3 rounded-lg text-sm transition-colors ${activeTab === 'stories' ? 'bg-[#FF3366]/10 text-[#FF3366]' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}><Video size={18}/> Criativa Stories</button>
         <button onClick={() => setActiveTab('vitrine')} className={`flex items-center gap-3 p-3 rounded-lg text-sm transition-colors ${activeTab === 'vitrine' ? 'bg-[#FF3366]/10 text-[#FF3366]' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}><Package size={18}/> Produtos Vitrine</button>
@@ -170,6 +202,7 @@ export default function AdminDashboard() {
         <header className="mb-10 flex justify-between items-end">
           <h1 className="text-3xl font-bold gradient-text uppercase tracking-wider">
             {activeTab === 'financeiro' && 'Painel Financeiro'}
+            {activeTab === 'lucro' && 'Calculadora de Lucro Real'}
             {activeTab === 'landing' && 'Gerenciador do Site (Banners & Textos)'}
             {activeTab === 'stories' && 'Painel Criativa Stories'}
             {activeTab === 'vitrine' && 'Gestão de Estoque'}
@@ -181,6 +214,87 @@ export default function AdminDashboard() {
             </button>
           )}
         </header>
+
+        {/* LUCRO REAL */}
+        {activeTab === 'lucro' && (
+          <div className="space-y-8 max-w-6xl">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="glass-panel p-6 border-l-4 border-blue-500">
+                <p className="text-gray-400 text-sm mb-1">Total Faturado (todos os pedidos)</p>
+                <h3 className="text-3xl font-bold text-blue-400">R$ {lucroGlobal.receita.toFixed(2).replace('.', ',')}</h3>
+              </div>
+              <div className="glass-panel p-6 border-l-4 border-red-500">
+                <p className="text-gray-400 text-sm mb-1">Custo Total Estimado</p>
+                <h3 className="text-3xl font-bold text-red-400">R$ {lucroGlobal.custo.toFixed(2).replace('.', ',')}</h3>
+              </div>
+              <div className={`glass-panel p-6 border-l-4 ${lucroGlobal.lucro >= 0 ? 'border-green-500' : 'border-red-500'}`}>
+                <p className="text-gray-400 text-sm mb-1">Lucro Líquido Estimado</p>
+                <h3 className={`text-3xl font-bold ${lucroGlobal.lucro >= 0 ? 'text-green-400' : 'text-red-400'}`}>R$ {lucroGlobal.lucro.toFixed(2).replace('.', ',')}</h3>
+                <p className="text-xs text-gray-500 mt-1">Margem: {lucroGlobal.receita > 0 ? ((lucroGlobal.lucro / lucroGlobal.receita) * 100).toFixed(1) : 0}%</p>
+              </div>
+            </div>
+            <div className="glass-panel p-6">
+              <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Settings size={18} className="text-[#FF3366]"/> Configurar Parâmetros de Custo</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {[
+                  { key: 'pla_por_grama', label: 'PLA (R$/grama)', step: '0.01' },
+                  { key: 'energia_por_hora', label: 'Energia (R$/hora imp.)', step: '0.01' },
+                  { key: 'horas_por_100g', label: 'Horas impressas / 100g', step: '0.1' },
+                  { key: 'mao_de_obra_por_pedido', label: 'Mão de Obra (R$/pedido)', step: '0.5' },
+                  { key: 'taxa_stripe_pct', label: 'Taxa Stripe (%)', step: '0.01' },
+                  { key: 'taxa_stripe_fixo', label: 'Taxa Stripe Fixa (R$)', step: '0.01' },
+                ].map(({ key, label, step }) => (
+                  <div key={key}>
+                    <label className="text-xs text-gray-400 block mb-1">{label}</label>
+                    <input type="number" step={step} min="0" value={(custoConfig as any)[key]}
+                      onChange={e => setCustoConfig({ ...custoConfig, [key]: parseFloat(e.target.value) || 0 })}
+                      className="w-full bg-black/50 border border-white/10 rounded p-2 text-sm text-white focus:border-green-500 outline-none" />
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 mt-4 flex items-center gap-1"><AlertCircle size={12}/> Recalcula em tempo real. Parâmetros salvos apenas na sessão atual.</p>
+            </div>
+            <div className="glass-panel overflow-x-auto">
+              <table className="w-full text-left text-xs min-w-[1000px]">
+                <thead className="bg-white/5 text-gray-400">
+                  <tr>
+                    <th className="p-3">ID / Cliente</th>
+                    <th className="p-3 text-right">Receita</th>
+                    <th className="p-3 text-right">Material</th>
+                    <th className="p-3 text-right">Energia</th>
+                    <th className="p-3 text-right">Mão de Obra</th>
+                    <th className="p-3 text-right">Stripe</th>
+                    <th className="p-3 text-right">Custo Total</th>
+                    <th className="p-3 text-right font-bold">Lucro</th>
+                    <th className="p-3 text-right">Margem</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {orders.length === 0 && <tr><td colSpan={9} className="p-8 text-center text-gray-500">Nenhum pedido ainda.</td></tr>}
+                  {orders.map(order => {
+                    const l = calcularLucro(order);
+                    return (
+                      <tr key={order.id} className="hover:bg-white/5">
+                        <td className="p-3">
+                          <p className="font-bold text-white text-sm">{order.customer_name || 'Desconhecido'}</p>
+                          <p className="font-mono text-[10px] text-[#8A2BE2]">{order.id.split('-')[0]}</p>
+                        </td>
+                        <td className="p-3 text-right text-blue-300">R$ {l.receita.toFixed(2)}</td>
+                        <td className="p-3 text-right text-gray-400">R$ {l.custoMaterial.toFixed(2)}</td>
+                        <td className="p-3 text-right text-gray-400">R$ {l.custoEnergia.toFixed(2)}</td>
+                        <td className="p-3 text-right text-gray-400">R$ {l.custoMaoDeObra.toFixed(2)}</td>
+                        <td className="p-3 text-right text-gray-400">R$ {l.taxaStripe.toFixed(2)}</td>
+                        <td className="p-3 text-right text-red-300 font-bold">R$ {l.custoTotal.toFixed(2)}</td>
+                        <td className={`p-3 text-right font-bold ${l.lucroLiquido >= 0 ? 'text-green-400' : 'text-red-400'}`}>R$ {l.lucroLiquido.toFixed(2)}</td>
+                        <td className={`p-3 text-right font-bold ${l.margemPct >= 30 ? 'text-green-400' : l.margemPct >= 10 ? 'text-yellow-400' : 'text-red-400'}`}>{l.margemPct.toFixed(1)}%</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* FINANCEIRO */}
         {activeTab === 'financeiro' && (

@@ -6,6 +6,8 @@ import Image from "next/image";
 import { Printer, Package, Zap, ShieldCheck, Star, MessageCircle, Play, X, ShoppingBag } from 'lucide-react';
 import { supabase } from "@/lib/supabase";
 import { useCart } from '@/contexts/CartContext';
+import { motion } from "framer-motion";
+import { ScrollSnake } from "@/components/ScrollSnake";
 
 export default function Home() {
   const { addToCart } = useCart();
@@ -149,21 +151,50 @@ export default function Home() {
       </div>
 
       {/* MAIN CONTENT SITE */}
+      <ScrollSnake />
       <main className={`min-h-screen w-full overflow-x-hidden transition-all duration-1000 ${showIntro ? 'translate-y-20 opacity-0' : 'translate-y-0 opacity-100'}`}>
         
         {/* SESSÃO 1: BANNERS (Flash e Loop) */}
-        <section className="relative w-full bg-[#020202]">
-          {/* Flash Banner (Topo) */}
-          {flashBanners.length > 0 && (
-            <div className="w-full h-[400px] relative flex items-center justify-center overflow-hidden border-b border-white/5">
-               <Image src={flashBanners[0].image_url} alt="Destaque" fill className="object-cover opacity-80" />
-               <div className="absolute inset-0 bg-gradient-to-t from-[#020202] to-transparent" />
-               <div className="relative z-10 text-center">
-                 <h1 className="text-4xl md:text-6xl font-black mb-4 drop-shadow-2xl">
-                   {sections['hero_section']?.title || 'Bem-vindo à'} <span className="gradient-text">Criativa Sisters</span>
-                 </h1>
-                 <p className="text-gray-300 text-lg">{sections['hero_section']?.subtitle}</p>
+        <section className="relative w-full bg-[#020202] overflow-hidden">
+          {/* Glow ambient de fundo */}
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#FF3366]/10 rounded-full blur-[120px] pointer-events-none" />
+          <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#8A2BE2]/10 rounded-full blur-[120px] pointer-events-none" />
+
+          {/* Flash Banner (Topo) - sem Flash Banner usa Hero padrão */}
+          {flashBanners.length > 0 ? (
+            <div className="w-full h-[500px] relative flex items-center justify-center overflow-hidden border-b border-white/5">
+               <Image src={flashBanners[0].image_url} alt="Destaque" fill className="object-cover opacity-60" />
+               <div className="absolute inset-0 bg-gradient-to-t from-[#020202] via-black/40 to-transparent" />
+               <div className="relative z-10 text-center px-6">
+                 <motion.h1 initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, ease: "easeOut" }}
+                   className="text-5xl md:text-7xl font-black mb-4 drop-shadow-2xl leading-tight">
+                   {sections['hero_section']?.title || 'Bem-vindo à'}{' '}
+                   <span className="gradient-text relative">
+                     Criativa Sisters
+                     <span className="absolute -bottom-1 left-0 right-0 h-1 bg-gradient-to-r from-[#FF3366] to-[#8A2BE2] rounded-full opacity-80" />
+                   </span>
+                 </motion.h1>
+                 <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, delay: 0.2 }}
+                   className="text-gray-300 text-xl">{sections['hero_section']?.subtitle}</motion.p>
                </div>
+            </div>
+          ) : (
+            /* Hero fallback quando não há flash banner */
+            <div className="w-full h-[500px] flex items-center justify-center">
+              <div className="relative z-10 text-center px-6">
+                <motion.h1 initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9 }}
+                  className="text-5xl md:text-7xl font-black mb-4 leading-tight">
+                  Transforme ideias em{' '}
+                  <span className="gradient-text relative">
+                    Arte 3D Real
+                    <span className="absolute -bottom-1 left-0 right-0 h-1 bg-gradient-to-r from-[#FF3366] to-[#8A2BE2] rounded-full" />
+                  </span>
+                </motion.h1>
+                <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3, duration: 0.8 }}
+                  className="text-gray-400 text-xl max-w-lg mx-auto">
+                  IA de ponta + Impressão Bambu Lab multicor. Do upload à sua porta.
+                </motion.p>
+              </div>
             </div>
           )}
 
@@ -207,58 +238,92 @@ export default function Home() {
         )}
 
         {/* SESSÃO 2: CRIAÇÃO (Onde faz o Upload) */}
-        <section ref={createSectionRef} className="py-24 px-6 relative bg-gradient-to-b from-[#050505] to-[#0a0a0a]">
-          <div className="max-w-4xl mx-auto glass-panel p-10 md:p-16 text-center border-[#8A2BE2]/20 shadow-[0_0_50px_rgba(138,43,226,0.1)]">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">{sections['creation_section']?.title || 'Crie Sua Peça Agora'}</h2>
-            <p className="text-gray-400 mb-10 text-lg">{sections['creation_section']?.subtitle || 'Nossa IA vai transformar sua imagem.'}</p>
+        <section ref={createSectionRef} className="py-28 px-6 relative bg-gradient-to-b from-[#050505] via-[#080808] to-[#050505] overflow-hidden">
+          {/* Luzes Ambientais Criativa Sisters */}
+          <div className="absolute top-1/2 left-0 w-80 h-80 bg-[#FF3366]/15 rounded-full blur-[140px] pointer-events-none" />
+          <div className="absolute top-1/2 right-0 w-80 h-80 bg-[#8A2BE2]/15 rounded-full blur-[140px] pointer-events-none" />
+
+          {/* Divisor Luminoso Superior */}
+          <div className="max-w-4xl mx-auto h-px bg-gradient-to-r from-transparent via-[#FF3366]/40 to-transparent mb-16" />
+
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="max-w-4xl mx-auto glass-panel p-10 md:p-16 text-center border-[#8A2BE2]/30 shadow-[0_0_60px_rgba(138,43,226,0.15)] relative z-10"
+          >
+            <span className="inline-block text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full bg-[#FF3366]/10 text-[#FF3366] border border-[#FF3366]/30 mb-6 shadow-[0_0_15px_rgba(255,51,102,0.2)]">
+              ✨ IA Generativa Multicor
+            </span>
+            <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight">
+              {sections['creation_section']?.title || 'Crie Sua Peça'} <span className="gradient-text">Em Segundos</span>
+            </h2>
+            <p className="text-gray-400 mb-10 text-lg max-w-2xl mx-auto">{sections['creation_section']?.subtitle || 'Nossa IA converte sua imagem 2D em malha tridimensional pronta para impressão física na Bambu Lab.'}</p>
             
             <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleUpload} />
             
-            <button 
+            <motion.button 
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.98 }}
               disabled={isUploading}
               onClick={() => fileInputRef.current?.click()} 
-              className="w-full md:w-auto mx-auto btn-primary flex items-center justify-center gap-3 text-xl px-12 py-5"
+              className="w-full md:w-auto mx-auto btn-primary flex items-center justify-center gap-3 text-xl px-12 py-5 shadow-[0_0_30px_rgba(255,51,102,0.4)] hover:shadow-[0_0_45px_rgba(255,51,102,0.6)] transition-all cursor-pointer"
             >
               {isUploading ? (
                 <span className="animate-pulse">{statusText}</span>
               ) : (
                 <>{sections['creation_section']?.cta_text || 'Subir Imagem e Ver Mágica'} <Printer size={24} /></>
               )}
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
         </section>
 
         {/* SESSÃO 3: VITRINE DE PROJETOS PRONTOS */}
-        <section className="py-24 px-6">
-          <div className="max-w-6xl mx-auto">
+        <section className="py-28 px-6 relative overflow-hidden">
+          {/* Luz Ambiente Cósmica */}
+          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[350px] bg-[#8A2BE2]/10 rounded-full blur-[160px] pointer-events-none" />
+
+          <div className="max-w-6xl mx-auto relative z-10">
             <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-5xl font-bold mb-4">Vitrine <span className="gradient-text">Premium</span></h2>
-              <p className="text-gray-400">Artes já modeladas e prontas para envio imediato.</p>
+              <span className="inline-block text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full bg-[#8A2BE2]/10 text-[#E0829D] border border-[#8A2BE2]/30 mb-4">
+                Pronto para Entrega
+              </span>
+              <h2 className="text-3xl md:text-5xl font-black mb-4">Vitrine <span className="gradient-text">Premium</span></h2>
+              <p className="text-gray-400 text-lg">Artes exclusivas já modeladas e prontas para envio imediato.</p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {products.length === 0 ? (
                 <p className="col-span-3 text-center text-gray-500">Nenhum produto cadastrado na vitrine ainda.</p>
               ) : (
-                products.map((prod) => (
-                  <div key={prod.id} className="glass-panel group overflow-hidden border-white/5 hover:border-[#FF3366]/50 transition-colors">
-                    <div className="h-64 bg-[#111] flex items-center justify-center relative">
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10" />
+                products.map((prod, index) => (
+                  <motion.div 
+                    key={prod.id} 
+                    initial={{ opacity: 0, y: 25 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    whileHover={{ y: -6 }}
+                    className="glass-panel group overflow-hidden border-white/5 hover:border-[#FF3366]/50 hover:shadow-[0_0_30px_rgba(255,51,102,0.2)] transition-all"
+                  >
+                    <div className="h-64 bg-[#111] flex items-center justify-center relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10" />
                       {prod.image_url ? (
-                        <Image src={prod.image_url} alt={prod.name} fill className="object-cover z-0" />
+                        <Image src={prod.image_url} alt={prod.name} fill className="object-cover z-0 group-hover:scale-105 transition-transform duration-500" />
                       ) : (
                         <Package size={64} className="text-gray-600 group-hover:text-[#FF3366] transition-colors z-0" />
                       )}
                     </div>
                     <div className="p-6 relative z-20 -mt-12">
                       <div className="flex justify-between items-start mb-1">
-                        <h3 className="text-xl font-bold">{prod.name}</h3>
+                        <h3 className="text-xl font-bold group-hover:text-white transition-colors">{prod.name}</h3>
                         <button onClick={async () => {
                           const { data: { session } } = await supabase.auth.getSession();
                           if(!session) { alert('Faça login para favoritar!'); return; }
                           await supabase.from('favorites').insert({ user_id: session.user.id, product_id: prod.id });
                           alert('Adicionado aos favoritos!');
-                        }} className="text-gray-400 hover:text-[#FF3366] transition">
+                        }} className="text-gray-400 hover:text-[#FF3366] transition cursor-pointer p-1">
                           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
                         </button>
                       </div>
@@ -271,12 +336,12 @@ export default function Home() {
                           quantity: 1,
                           image_url: prod.image_url || '',
                           type: 'product',
-                          weight_g: 250 // Estimativa média para produtos da vitrine
+                          weight_g: 250
                         });
                         alert('Adicionado ao carrinho!');
-                      }} className="w-full btn-secondary">Adicionar ao Carrinho</button>
+                      }} className="w-full btn-secondary group-hover:border-[#FF3366]/60 transition-all cursor-pointer">Adicionar ao Carrinho</button>
                     </div>
-                  </div>
+                  </motion.div>
                 ))
               )}
             </div>
@@ -284,34 +349,46 @@ export default function Home() {
         </section>
 
         {/* SESSÃO 4: POR QUE ESCOLHER (O Padrão Criativa Sisters) */}
-        <section className="py-24 px-6 bg-[#080808] border-y border-white/5">
-          <div className="max-w-6xl mx-auto">
-            <h2 className="text-3xl md:text-5xl font-bold text-center mb-16">O Padrão <span className="gradient-text">Criativa Sisters</span></h2>
+        <section className="py-28 px-6 bg-[#080808] border-y border-white/5 relative overflow-hidden">
+          {/* Luz de destaque lateral */}
+          <div className="absolute top-0 right-1/3 w-96 h-96 bg-[#FF3366]/10 rounded-full blur-[150px] pointer-events-none" />
+
+          <div className="max-w-6xl mx-auto relative z-10">
+            <h2 className="text-3xl md:text-5xl font-black text-center mb-16 tracking-tight">O Padrão <span className="gradient-text">Criativa Sisters</span></h2>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-              <div className="text-center space-y-4">
-                <div className="w-20 h-20 mx-auto rounded-full bg-[#FF3366]/10 flex items-center justify-center border border-[#FF3366]/30">
-                  <Zap size={32} className="text-[#FF3366]" />
+              <motion.div 
+                whileHover={{ y: -5 }}
+                className="text-center space-y-4 glass-panel p-8 border-white/5 hover:border-[#FF3366]/30 transition-all"
+              >
+                <div className="w-20 h-20 mx-auto rounded-2xl bg-[#FF3366]/10 flex items-center justify-center border border-[#FF3366]/30 shadow-[0_0_20px_rgba(255,51,102,0.2)]">
+                  <Zap size={34} className="text-[#FF3366]" />
                 </div>
                 <h3 className="text-xl font-bold">IA de Ponta</h3>
-                <p className="text-gray-400 text-sm">Convertemos sua foto 2D em malha tridimensional complexa em menos de 10 segundos.</p>
-              </div>
+                <p className="text-gray-400 text-sm leading-relaxed">Convertemos sua foto 2D em malha tridimensional complexa em menos de 10 segundos com cálculo paramétrico.</p>
+              </motion.div>
               
-              <div className="text-center space-y-4">
-                <div className="w-20 h-20 mx-auto rounded-full bg-[#8A2BE2]/10 flex items-center justify-center border border-[#8A2BE2]/30">
-                  <Printer size={32} className="text-[#8A2BE2]" />
+              <motion.div 
+                whileHover={{ y: -5 }}
+                className="text-center space-y-4 glass-panel p-8 border-white/5 hover:border-[#8A2BE2]/30 transition-all"
+              >
+                <div className="w-20 h-20 mx-auto rounded-2xl bg-[#8A2BE2]/10 flex items-center justify-center border border-[#8A2BE2]/30 shadow-[0_0_20px_rgba(138,43,226,0.2)]">
+                  <Printer size={34} className="text-[#8A2BE2]" />
                 </div>
                 <h3 className="text-xl font-bold">Precisão Bambu Lab</h3>
-                <p className="text-gray-400 text-sm">Impressão multicor com o sistema AMS Lite. Sua arte não é pintada, ela nasce colorida.</p>
-              </div>
+                <p className="text-gray-400 text-sm leading-relaxed">Impressão multicor com sistema AMS Lite. Sua arte nasce colorida diretamente do filamento de alta densidade.</p>
+              </motion.div>
 
-              <div className="text-center space-y-4">
-                <div className="w-20 h-20 mx-auto rounded-full bg-[#E0829D]/10 flex items-center justify-center border border-[#E0829D]/30">
-                  <ShieldCheck size={32} className="text-[#E0829D]" />
+              <motion.div 
+                whileHover={{ y: -5 }}
+                className="text-center space-y-4 glass-panel p-8 border-white/5 hover:border-[#E0829D]/30 transition-all"
+              >
+                <div className="w-20 h-20 mx-auto rounded-2xl bg-[#E0829D]/10 flex items-center justify-center border border-[#E0829D]/30 shadow-[0_0_20px_rgba(224,130,157,0.2)]">
+                  <ShieldCheck size={34} className="text-[#E0829D]" />
                 </div>
                 <h3 className="text-xl font-bold">Custo Transparente</h3>
-                <p className="text-gray-400 text-sm">Você paga pelo grama exato do filamento calculado antes mesmo da impressão começar.</p>
-              </div>
+                <p className="text-gray-400 text-sm leading-relaxed">Você paga pelo grama exato do filamento calculado antes mesmo da impressão física começar.</p>
+              </motion.div>
             </div>
           </div>
         </section>
@@ -321,16 +398,16 @@ export default function Home() {
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl font-bold mb-12">Quem Compra, Se Apaixona.</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="glass-panel p-6 text-left border-white/5 flex gap-4">
-                <div className="w-12 h-12 rounded-full bg-gray-700 shrink-0" />
+              <div className="glass-panel p-6 text-left border-white/5 flex gap-4 hover:border-white/15 transition-colors">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#FF3366] to-[#8A2BE2] shrink-0 flex items-center justify-center font-bold text-white">M</div>
                 <div>
                   <div className="flex text-yellow-400 mb-2"><Star size={14} fill="currentColor"/><Star size={14} fill="currentColor"/><Star size={14} fill="currentColor"/><Star size={14} fill="currentColor"/><Star size={14} fill="currentColor"/></div>
                   <p className="text-gray-300 text-sm italic">"Eu mandei um logo da minha empresa e achei que ia ficar reto, mas a IA gerou um volume perfeito. A cor ficou idêntica!"</p>
                   <p className="text-xs text-gray-500 mt-2">- Marcos T.</p>
                 </div>
               </div>
-              <div className="glass-panel p-6 text-left border-white/5 flex gap-4">
-                <div className="w-12 h-12 rounded-full bg-gray-700 shrink-0" />
+              <div className="glass-panel p-6 text-left border-white/5 flex gap-4 hover:border-white/15 transition-colors">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#8A2BE2] to-[#E0829D] shrink-0 flex items-center justify-center font-bold text-white">A</div>
                 <div>
                   <div className="flex text-yellow-400 mb-2"><Star size={14} fill="currentColor"/><Star size={14} fill="currentColor"/><Star size={14} fill="currentColor"/><Star size={14} fill="currentColor"/><Star size={14} fill="currentColor"/></div>
                   <p className="text-gray-300 text-sm italic">"Atendimento surreal. Cliquei no botão do Whatsapp no preview e a equipe melhorou os detalhes do rosto pra mim."</p>
