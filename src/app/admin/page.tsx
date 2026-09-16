@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
@@ -10,11 +10,21 @@ export default function AdminLogin() {
   const [error, setError] = useState('');
   const router = useRouter();
 
+  useEffect(() => {
+    const authCookie = document.cookie.split('; ').find(row => row.startsWith('admin_auth='));
+    const isCookieAuth = authCookie && authCookie.split('=')[1] === 'true';
+    const isLocalAuth = localStorage.getItem('criativa_admin_auth') === 'true';
+    if (isCookieAuth || isLocalAuth) {
+      router.replace('/admin/dashboard');
+    }
+  }, [router]);
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (user === 'ADM-Criativa' && password === 'CriativaS2026$') {
+    if (user.trim() === 'ADM-Criativa' && password.trim() === 'CriativaS2026$') {
+      document.cookie = 'admin_auth=true; path=/; max-age=86400; SameSite=Lax';
       localStorage.setItem('criativa_admin_auth', 'true');
-      router.push('/admin/dashboard');
+      router.replace('/admin/dashboard');
     } else {
       setError('Credenciais inválidas. Acesso negado.');
     }

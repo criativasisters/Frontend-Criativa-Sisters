@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Box, Layers, Settings, Phone, Save, Edit, Plus, Package, DollarSign, Download, Image as ImageIcon, Video, Trash, TrendingUp, AlertCircle } from 'lucide-react';
+import { Box, Layers, Settings, Phone, Save, Edit, Plus, Package, DollarSign, Download, Image as ImageIcon, Video, Trash, TrendingUp, AlertCircle, LogOut } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import * as XLSX from 'xlsx';
 import Image from 'next/image';
@@ -31,12 +31,20 @@ export default function AdminDashboard() {
   const [storyForm, setStoryForm] = useState({ video_url: '', thumbnail_url: '', cta_text: 'Comprar', product_id: '' });
 
   useEffect(() => {
-    // Basic Auth Check for MVP
+    // Auth Check resiliente (Cookie e/ou LocalStorage)
     const authCookie = document.cookie.split('; ').find(row => row.startsWith('admin_auth='));
-    if (!authCookie || authCookie.split('=')[1] !== 'true') {
-      router.push('/admin');
+    const isCookieAuth = authCookie && authCookie.split('=')[1] === 'true';
+    const isLocalAuth = typeof window !== 'undefined' && localStorage.getItem('criativa_admin_auth') === 'true';
+
+    if (!isCookieAuth && !isLocalAuth) {
+      router.replace('/admin');
       return;
     }
+
+    if (isLocalAuth && !isCookieAuth) {
+      document.cookie = 'admin_auth=true; path=/; max-age=86400; SameSite=Lax';
+    }
+
     fetchData();
     const wa = localStorage.getItem('cs_whatsapp');
     if (wa) setWhatsapp(wa);
@@ -186,6 +194,12 @@ export default function AdminDashboard() {
     return { receita: acc.receita + l.receita, custo: acc.custo + l.custoTotal, lucro: acc.lucro + l.lucroLiquido };
   }, { receita: 0, custo: 0, lucro: 0 });
 
+  const handleLogout = () => {
+    document.cookie = 'admin_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+    localStorage.removeItem('criativa_admin_auth');
+    router.replace('/admin');
+  };
+
   return (
     <div className="min-h-screen bg-[#050505] flex">
       <aside className="w-64 bg-[#0a0a0a] border-r border-white/5 p-6 flex flex-col gap-2">
@@ -196,6 +210,10 @@ export default function AdminDashboard() {
         <button onClick={() => setActiveTab('stories')} className={`flex items-center gap-3 p-3 rounded-lg text-sm transition-colors ${activeTab === 'stories' ? 'bg-[#FF3366]/10 text-[#FF3366]' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}><Video size={18}/> Criativa Stories</button>
         <button onClick={() => setActiveTab('vitrine')} className={`flex items-center gap-3 p-3 rounded-lg text-sm transition-colors ${activeTab === 'vitrine' ? 'bg-[#FF3366]/10 text-[#FF3366]' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}><Package size={18}/> Produtos Vitrine</button>
         <button onClick={() => setActiveTab('automacoes')} className={`flex items-center gap-3 p-3 rounded-lg text-sm transition-colors ${activeTab === 'automacoes' ? 'bg-[#FF3366]/10 text-[#FF3366]' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}><Settings size={18}/> Configurações</button>
+        
+        <button onClick={handleLogout} className="flex items-center gap-3 p-3 rounded-lg text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors mt-auto cursor-pointer border border-red-500/20">
+          <LogOut size={18}/> Sair do Admin
+        </button>
       </aside>
 
       <main className="flex-1 p-10 overflow-y-auto">
