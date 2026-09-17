@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Box, Layers, Settings, Phone, Save, Edit, Plus, Package, DollarSign, Download, Image as ImageIcon, Video, Trash, TrendingUp, AlertCircle, LogOut } from 'lucide-react';
+import { Box, Layers, Settings, Phone, Save, Edit, Plus, Package, DollarSign, Download, Image as ImageIcon, Video, Trash, TrendingUp, AlertCircle, LogOut, RefreshCw, ExternalLink, Zap } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import * as XLSX from 'xlsx';
 import Image from 'next/image';
@@ -30,6 +30,57 @@ export default function AdminDashboard() {
   const [showStoryForm, setShowStoryForm] = useState(false);
   const [storyForm, setStoryForm] = useState({ video_url: '', thumbnail_url: '', cta_text: 'Comprar', product_id: '' });
 
+  // Tripo3D Balance State
+  const [tripoBalance, setTripoBalance] = useState<{
+    balance: number;
+    frozen: number;
+    mode: 'live' | 'mock' | 'error';
+    loading: boolean;
+    error?: string;
+    lastUpdated?: string;
+  }>({
+    balance: 0,
+    frozen: 0,
+    mode: 'mock',
+    loading: false
+  });
+
+  const fetchTripoBalance = async () => {
+    setTripoBalance(prev => ({ ...prev, loading: true }));
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+      const res = await fetch(`${backendUrl}/api/admin/tripo-balance`);
+      const data = await res.json();
+      if (data.success) {
+        setTripoBalance({
+          balance: Number(data.balance ?? 0),
+          frozen: Number(data.frozen ?? 0),
+          mode: data.mode || 'live',
+          loading: false,
+          lastUpdated: new Date().toLocaleTimeString('pt-BR')
+        });
+      } else {
+        setTripoBalance({
+          balance: 0,
+          frozen: 0,
+          mode: 'error',
+          error: data.error || 'Falha ao consultar Tripo3D',
+          loading: false,
+          lastUpdated: new Date().toLocaleTimeString('pt-BR')
+        });
+      }
+    } catch (err: any) {
+      setTripoBalance({
+        balance: 0,
+        frozen: 0,
+        mode: 'error',
+        error: 'Backend offline',
+        loading: false,
+        lastUpdated: new Date().toLocaleTimeString('pt-BR')
+      });
+    }
+  };
+
   useEffect(() => {
     // Auth Check resiliente (Cookie e/ou LocalStorage)
     const authCookie = document.cookie.split('; ').find(row => row.startsWith('admin_auth='));
@@ -46,6 +97,7 @@ export default function AdminDashboard() {
     }
 
     fetchData();
+    fetchTripoBalance();
     const wa = localStorage.getItem('cs_whatsapp');
     if (wa) setWhatsapp(wa);
   }, [router]);
@@ -217,20 +269,92 @@ export default function AdminDashboard() {
       </aside>
 
       <main className="flex-1 p-10 overflow-y-auto">
-        <header className="mb-10 flex justify-between items-end">
-          <h1 className="text-3xl font-bold gradient-text uppercase tracking-wider">
-            {activeTab === 'financeiro' && 'Painel Financeiro'}
-            {activeTab === 'lucro' && 'Calculadora de Lucro Real'}
-            {activeTab === 'landing' && 'Gerenciador do Site (Banners & Textos)'}
-            {activeTab === 'stories' && 'Painel Criativa Stories'}
-            {activeTab === 'vitrine' && 'Gestão de Estoque'}
-            {activeTab === 'automacoes' && 'Configurações Globais'}
-          </h1>
-          {activeTab === 'financeiro' && (
-            <button onClick={handleExport} className="btn-primary flex items-center gap-2 text-sm px-4 py-2">
-              <Download size={16} /> Exportar Relatório (XLSX)
-            </button>
-          )}
+        <header className="mb-10 flex flex-wrap justify-between items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold gradient-text uppercase tracking-wider">
+              {activeTab === 'financeiro' && 'Painel Financeiro'}
+              {activeTab === 'lucro' && 'Calculadora de Lucro Real'}
+              {activeTab === 'landing' && 'Gerenciador do Site (Banners & Textos)'}
+              {activeTab === 'stories' && 'Painel Criativa Stories'}
+              {activeTab === 'vitrine' && 'Gestão de Estoque'}
+              {activeTab === 'automacoes' && 'Configurações Globais'}
+            </h1>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {/* Widget Tripo3D Balance */}
+            <div className={`glass-panel px-4 py-2 rounded-xl flex items-center gap-3 border transition-colors ${
+              tripoBalance.mode === 'live' && tripoBalance.balance > 50
+                ? 'border-emerald-500/30 bg-emerald-950/20'
+                : tripoBalance.mode === 'live' && tripoBalance.balance > 0
+                ? 'border-amber-500/30 bg-amber-950/20'
+                : tripoBalance.mode === 'live' && tripoBalance.balance <= 0
+                ? 'border-red-500/40 bg-red-950/30 animate-pulse'
+                : 'border-white/10 bg-white/5'
+            }`}>
+              <Zap size={16} className={
+                tripoBalance.mode === 'live' && tripoBalance.balance > 50
+                  ? 'text-emerald-400'
+                  : tripoBalance.mode === 'live' && tripoBalance.balance > 0
+                  ? 'text-amber-400'
+                  : tripoBalance.mode === 'live' && tripoBalance.balance <= 0
+                  ? 'text-red-400'
+                  : 'text-[#FF3366]'
+              } />
+              
+              <div className="text-left">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] uppercase tracking-wider text-gray-400 font-semibold">Tripo3D IA</span>
+                  {tripoBalance.mode === 'mock' && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-mono">MOCK</span>
+                  )}
+                  {tripoBalance.mode === 'live' && tripoBalance.balance <= 0 && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-500/30 text-red-300 font-bold">ESGOTADO</span>
+                  )}
+                </div>
+                <div className="text-sm font-bold text-white flex items-center gap-1.5">
+                  {tripoBalance.loading ? (
+                    <span className="text-gray-400 text-xs animate-pulse">Sincronizando...</span>
+                  ) : tripoBalance.mode === 'error' ? (
+                    <span className="text-red-400 text-xs">Erro API</span>
+                  ) : (
+                    <>
+                      <span>{tripoBalance.balance.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</span>
+                      <span className="text-xs font-normal text-gray-400">créditos</span>
+                      {tripoBalance.frozen > 0 && (
+                        <span className="text-[10px] text-gray-500">({tripoBalance.frozen} em fila)</span>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <button
+                onClick={fetchTripoBalance}
+                disabled={tripoBalance.loading}
+                title={`Atualizar saldo${tripoBalance.lastUpdated ? ` (Última: ${tripoBalance.lastUpdated})` : ''}`}
+                className="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition disabled:opacity-50"
+              >
+                <RefreshCw size={14} className={tripoBalance.loading ? 'animate-spin text-[#FF3366]' : ''} />
+              </button>
+
+              <a
+                href="https://platform.tripo3d.ai/"
+                target="_blank"
+                rel="noreferrer"
+                title="Abrir painel Tripo3D / Comprar Créditos"
+                className="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-[#FF3366] transition"
+              >
+                <ExternalLink size={14} />
+              </a>
+            </div>
+
+            {activeTab === 'financeiro' && (
+              <button onClick={handleExport} className="btn-primary flex items-center gap-2 text-sm px-4 py-2">
+                <Download size={16} /> Exportar Relatório (XLSX)
+              </button>
+            )}
+          </div>
         </header>
 
         {/* LUCRO REAL */}
@@ -535,14 +659,104 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* AUTOMAÇÕES */}
+        {/* AUTOMAÇÕES & INTEGRAÇÕES */}
         {activeTab === 'automacoes' && (
-          <div className="glass-panel p-6 max-w-md space-y-6">
-            <div>
-              <label className="text-sm text-gray-300 flex items-center gap-2 mb-2"><Phone size={16} className="text-green-400"/> WhatsApp do Especialista</label>
-              <input type="text" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className="w-full bg-[#121212] border border-white/10 rounded-lg p-3 text-white focus:border-[#8A2BE2]" />
+          <div className="max-w-4xl space-y-8">
+            {/* Card Saldo Tripo3D Detalhado */}
+            <div className="glass-panel p-6 border-l-4 border-[#FF3366]">
+              <div className="flex flex-wrap justify-between items-start gap-4 mb-6">
+                <div>
+                  <h3 className="font-bold text-lg text-white flex items-center gap-2">
+                    <Zap size={20} className="text-[#FF3366]"/> Motor de Inteligência Artificial 3D (Tripo3D API)
+                  </h3>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Monitoramento em tempo real da cota e créditos para geração de modelos 3D na Criativa Sisters.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={fetchTripoBalance}
+                    disabled={tripoBalance.loading}
+                    className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5"
+                  >
+                    <RefreshCw size={13} className={tripoBalance.loading ? 'animate-spin text-[#FF3366]' : ''}/>
+                    {tripoBalance.loading ? 'Sincronizando...' : 'Atualizar Saldo'}
+                  </button>
+                  <a
+                    href="https://platform.tripo3d.ai/"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5"
+                  >
+                    Comprar Créditos <ExternalLink size={13}/>
+                  </a>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                  <span className="text-xs text-gray-400 block mb-1">Créditos Disponíveis</span>
+                  <div className="text-2xl font-bold text-white flex items-baseline gap-1">
+                    {tripoBalance.loading ? '...' : tripoBalance.balance.toLocaleString('pt-BR')}
+                    <span className="text-xs text-gray-400 font-normal">pts</span>
+                  </div>
+                  <span className={`text-[10px] mt-1 inline-block font-semibold ${
+                    tripoBalance.balance > 50 ? 'text-emerald-400' : tripoBalance.balance > 0 ? 'text-amber-400' : 'text-red-400'
+                  }`}>
+                    {tripoBalance.mode === 'mock' ? '● Modo Contingência / Mock' : tripoBalance.balance > 50 ? '● Saldo Saudável' : tripoBalance.balance > 0 ? '▲ Atenção: Saldo Baixo' : '■ Bloqueado: Recarga Obrigatória'}
+                  </span>
+                </div>
+
+                <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                  <span className="text-xs text-gray-400 block mb-1">Modelos Estimados Restantes</span>
+                  <div className="text-2xl font-bold text-blue-400 flex items-baseline gap-1">
+                    {tripoBalance.loading ? '...' : Math.floor(tripoBalance.balance / 20)}
+                    <span className="text-xs text-gray-400 font-normal">gerações (~20 pts/cada)</span>
+                  </div>
+                  <span className="text-[10px] text-gray-500 mt-1 block">Modelo Tripo v3.1 / P1</span>
+                </div>
+
+                <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                  <span className="text-xs text-gray-400 block mb-1">Créditos Bloqueados / Fila</span>
+                  <div className="text-2xl font-bold text-purple-400 flex items-baseline gap-1">
+                    {tripoBalance.loading ? '...' : tripoBalance.frozen}
+                    <span className="text-xs text-gray-400 font-normal">pts reservados</span>
+                  </div>
+                  <span className="text-[10px] text-gray-500 mt-1 block">Tarefas sendo esculpidas</span>
+                </div>
+              </div>
+
+              {tripoBalance.balance <= 0 && tripoBalance.mode === 'live' && (
+                <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-xs text-red-300 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle size={16} className="text-red-400 shrink-0"/>
+                    <span><strong>Atenção:</strong> Seus créditos da Tripo3D esgotaram (Código 2010). Novos uploads acionarão o modo comercial de contingência até a recarga.</span>
+                  </div>
+                  <a
+                    href="https://platform.tripo3d.ai/"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="shrink-0 underline font-bold hover:text-white"
+                  >
+                    Recarregar Agora →
+                  </a>
+                </div>
+              )}
             </div>
-            <button onClick={handleSaveAutomations} className="w-full btn-secondary"><Save size={18} className="inline mr-2"/> Salvar</button>
+
+            {/* WhatsApp e Outras Automações */}
+            <div className="glass-panel p-6 max-w-md space-y-6">
+              <h3 className="font-bold text-lg text-white flex items-center gap-2">
+                <Settings size={18} className="text-[#FF3366]"/> Canais & Atendimento
+              </h3>
+              <div>
+                <label className="text-sm text-gray-300 flex items-center gap-2 mb-2"><Phone size={16} className="text-green-400"/> WhatsApp do Especialista</label>
+                <input type="text" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="Ex: 5511999999999" className="w-full bg-[#121212] border border-white/10 rounded-lg p-3 text-white focus:border-[#8A2BE2]" />
+                <p className="text-[11px] text-gray-500 mt-1">Utilizado pelo botão de contingência e atendimento comercial 1-a-1.</p>
+              </div>
+              <button onClick={handleSaveAutomations} className="w-full btn-secondary"><Save size={18} className="inline mr-2"/> Salvar Configurações</button>
+            </div>
           </div>
         )}
 
