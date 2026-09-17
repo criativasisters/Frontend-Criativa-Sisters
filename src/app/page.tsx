@@ -88,6 +88,20 @@ export default function Home() {
       const data = await res.json();
       
       if (data.success && data.taskId) {
+        if (data.isFallback) {
+          setStatusText("Montando prévia 3D inicial...");
+          const queryParams = new URLSearchParams({
+            x: "15.0",
+            y: "15.0",
+            z: "12.0",
+            colors: (data.colors || ['#8A2BE2', '#FF3366']).join(','),
+            modelUrl: 'mock',
+            fallback: 'true'
+          }).toString();
+          router.push(`/preview/${data.taskId}?${queryParams}`);
+          return;
+        }
+
         setStatusText("Modelando a malha 3D... Isso pode levar 2 minutos.");
         
         const pollInterval = setInterval(async () => {

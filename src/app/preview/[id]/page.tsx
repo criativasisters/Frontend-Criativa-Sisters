@@ -36,6 +36,7 @@ export default function PreviewPage() {
   const orbitRef = useRef<any>(null);
   const [autoRotate, setAutoRotate] = useState(true);
   const modelUrl = searchParams.get('modelUrl') || 'mock';
+  const isFallback = searchParams.get('fallback') === 'true' || modelUrl === 'mock';
   
   // Pegando os dados gerados pelo Backend (passados na URL)
   const baseX = parseFloat(searchParams.get('x') || '15.2');
@@ -167,6 +168,16 @@ export default function PreviewPage() {
       <section className="w-full md:w-[450px] border-t md:border-t-0 md:border-l border-white/10 flex flex-col bg-[#080808] z-20 h-screen overflow-y-auto custom-scrollbar">
         
         <div className="flex-1 p-6">
+          {isFallback && (
+            <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-[#8A2BE2]/15 to-[#FF3366]/10 border border-[#8A2BE2]/30 flex items-start gap-3 text-xs text-gray-300 shadow-[0_0_20px_rgba(138,43,226,0.15)]">
+              <span className="text-lg">✨</span>
+              <div>
+                <p className="font-bold text-[#E0829D] text-sm mb-0.5">Prévia Paramétrica Inicial</p>
+                <p className="leading-relaxed">Nossa equipe de modelistas especializados irá lapidar e detalhar a peça para a impressão física definitiva na Bambu Lab.</p>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center gap-3 mb-6">
             <Package className="text-[#FF3366]" size={28} />
             <h2 className="text-xl font-bold">Personalização</h2>
