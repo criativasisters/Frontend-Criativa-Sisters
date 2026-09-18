@@ -254,8 +254,8 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-[#050505] flex">
-      <aside className="w-64 bg-[#0a0a0a] border-r border-white/5 p-6 flex flex-col gap-2">
-        <div className="mb-8 font-bold text-xl gradient-text tracking-wider">CRIATIVA SISTERS<br/>ADMIN</div>
+      <aside className="w-64 bg-[#0a0a0a] border-r border-white/5 p-6 flex flex-col gap-2 shrink-0 h-screen sticky top-0 overflow-y-auto custom-scrollbar">
+        <div className="mb-6 font-bold text-xl gradient-text tracking-wider">CRIATIVA SISTERS<br/>ADMIN</div>
         <button onClick={() => setActiveTab('financeiro')} className={`flex items-center gap-3 p-3 rounded-lg text-sm transition-colors ${activeTab === 'financeiro' ? 'bg-[#FF3366]/10 text-[#FF3366]' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}><DollarSign size={18}/> Financeiro & Pedidos</button>
         <button onClick={() => setActiveTab('lucro')} className={`flex items-center gap-3 p-3 rounded-lg text-sm transition-colors ${activeTab === 'lucro' ? 'bg-green-500/10 text-green-400' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}><TrendingUp size={18}/> Lucro Real</button>
         <button onClick={() => setActiveTab('landing')} className={`flex items-center gap-3 p-3 rounded-lg text-sm transition-colors ${activeTab === 'landing' ? 'bg-[#FF3366]/10 text-[#FF3366]' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}><ImageIcon size={18}/> Banners e Textos</button>
@@ -263,98 +263,75 @@ export default function AdminDashboard() {
         <button onClick={() => setActiveTab('vitrine')} className={`flex items-center gap-3 p-3 rounded-lg text-sm transition-colors ${activeTab === 'vitrine' ? 'bg-[#FF3366]/10 text-[#FF3366]' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}><Package size={18}/> Produtos Vitrine</button>
         <button onClick={() => setActiveTab('automacoes')} className={`flex items-center gap-3 p-3 rounded-lg text-sm transition-colors ${activeTab === 'automacoes' ? 'bg-[#FF3366]/10 text-[#FF3366]' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}><Settings size={18}/> Configurações</button>
         
-        <button onClick={handleLogout} className="flex items-center gap-3 p-3 rounded-lg text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors mt-auto cursor-pointer border border-red-500/20">
-          <LogOut size={18}/> Sair do Admin
-        </button>
-      </aside>
-
-      <main className="flex-1 p-10 overflow-y-auto">
-        <header className="mb-10 flex flex-wrap justify-between items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold gradient-text uppercase tracking-wider">
-              {activeTab === 'financeiro' && 'Painel Financeiro'}
-              {activeTab === 'lucro' && 'Calculadora de Lucro Real'}
-              {activeTab === 'landing' && 'Gerenciador do Site (Banners & Textos)'}
-              {activeTab === 'stories' && 'Painel Criativa Stories'}
-              {activeTab === 'vitrine' && 'Gestão de Estoque'}
-              {activeTab === 'automacoes' && 'Configurações Globais'}
-            </h1>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {/* Widget Tripo3D Balance */}
-            <div className={`glass-panel px-4 py-2 rounded-xl flex items-center gap-3 border transition-colors ${
-              tripoBalance.mode === 'live' && tripoBalance.balance > 50
-                ? 'border-emerald-500/30 bg-emerald-950/20'
-                : tripoBalance.mode === 'live' && tripoBalance.balance > 0
-                ? 'border-amber-500/30 bg-amber-950/20'
-                : tripoBalance.mode === 'live' && tripoBalance.balance <= 0
-                ? 'border-red-500/40 bg-red-950/30 animate-pulse'
-                : 'border-white/10 bg-white/5'
-            }`}>
-              <Zap size={16} className={
-                tripoBalance.mode === 'live' && tripoBalance.balance > 50
-                  ? 'text-emerald-400'
-                  : tripoBalance.mode === 'live' && tripoBalance.balance > 0
-                  ? 'text-amber-400'
-                  : tripoBalance.mode === 'live' && tripoBalance.balance <= 0
-                  ? 'text-red-400'
-                  : 'text-[#FF3366]'
-              } />
-              
-              <div className="text-left">
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] uppercase tracking-wider text-gray-400 font-semibold">Tripo3D IA</span>
-                  {tripoBalance.mode === 'mock' && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-mono">MOCK</span>
-                  )}
-                  {tripoBalance.mode === 'live' && tripoBalance.balance <= 0 && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-500/30 text-red-300 font-bold">ESGOTADO</span>
-                  )}
-                </div>
-                <div className="text-sm font-bold text-white flex items-center gap-1.5">
-                  {tripoBalance.loading ? (
-                    <span className="text-gray-400 text-xs animate-pulse">Sincronizando...</span>
-                  ) : tripoBalance.mode === 'error' ? (
-                    <span className="text-red-400 text-xs">Erro API</span>
-                  ) : (
-                    <>
-                      <span>{tripoBalance.balance.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</span>
-                      <span className="text-xs font-normal text-gray-400">créditos</span>
-                      {tripoBalance.frozen > 0 && (
-                        <span className="text-[10px] text-gray-500">({tripoBalance.frozen} em fila)</span>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-
+        {/* Widget Tripo3D no Menu Lateral */}
+        <div className="mt-auto mb-3 glass-panel p-3 border border-white/10 rounded-xl bg-white/[0.03]">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[11px] uppercase tracking-wider text-gray-400 font-semibold flex items-center gap-1.5">
+              <Zap size={14} className={tripoBalance.mode === 'live' && tripoBalance.balance > 50 ? 'text-emerald-400' : tripoBalance.mode === 'live' && tripoBalance.balance > 0 ? 'text-amber-400' : 'text-[#FF3366]'} />
+              Tripo3D IA
+            </span>
+            <div className="flex items-center gap-1">
               <button
                 onClick={fetchTripoBalance}
                 disabled={tripoBalance.loading}
-                title={`Atualizar saldo${tripoBalance.lastUpdated ? ` (Última: ${tripoBalance.lastUpdated})` : ''}`}
-                className="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition disabled:opacity-50"
+                title={`Atualizar saldo${tripoBalance.lastUpdated ? ` (${tripoBalance.lastUpdated})` : ''}`}
+                className="p-1 rounded hover:bg-white/10 text-gray-400 hover:text-white transition disabled:opacity-50"
               >
-                <RefreshCw size={14} className={tripoBalance.loading ? 'animate-spin text-[#FF3366]' : ''} />
+                <RefreshCw size={12} className={tripoBalance.loading ? 'animate-spin text-[#FF3366]' : ''} />
               </button>
-
               <a
                 href="https://platform.tripo3d.ai/"
                 target="_blank"
                 rel="noreferrer"
-                title="Abrir painel Tripo3D / Comprar Créditos"
-                className="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-[#FF3366] transition"
+                title="Recarregar créditos na Tripo3D"
+                className="p-1 rounded hover:bg-white/10 text-gray-400 hover:text-[#FF3366] transition"
               >
-                <ExternalLink size={14} />
+                <ExternalLink size={12} />
               </a>
             </div>
-
-            {activeTab === 'financeiro' && (
-              <button onClick={handleExport} className="btn-primary flex items-center gap-2 text-sm px-4 py-2">
-                <Download size={16} /> Exportar Relatório (XLSX)
-              </button>
-            )}
           </div>
+          <div className="flex items-baseline justify-between">
+            <span className="text-base font-bold text-white">
+              {tripoBalance.loading ? (
+                <span className="text-xs text-gray-400 animate-pulse">Consultando...</span>
+              ) : (
+                `${tripoBalance.balance.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} pts`
+              )}
+            </span>
+            <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${
+              tripoBalance.mode === 'mock'
+                ? 'bg-purple-500/20 text-purple-300'
+                : tripoBalance.mode === 'live' && tripoBalance.balance > 50
+                ? 'bg-emerald-500/20 text-emerald-400'
+                : tripoBalance.mode === 'live' && tripoBalance.balance > 0
+                ? 'bg-amber-500/20 text-amber-400'
+                : 'bg-red-500/20 text-red-400'
+            }`}>
+              {tripoBalance.mode === 'mock' ? 'MOCK' : tripoBalance.balance > 50 ? 'OK' : tripoBalance.balance > 0 ? 'BAIXO' : 'ZERADO'}
+            </span>
+          </div>
+        </div>
+
+        <button onClick={handleLogout} className="flex items-center gap-3 p-3 rounded-lg text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors cursor-pointer border border-red-500/20">
+          <LogOut size={18}/> Sair do Admin
+        </button>
+      </aside>
+
+      <main className="flex-1 p-8 md:p-10 overflow-y-auto min-w-0">
+        <header className="mb-8 flex justify-between items-center">
+          <h1 className="text-2xl md:text-3xl font-bold gradient-text uppercase tracking-wider">
+            {activeTab === 'financeiro' && 'Painel Financeiro'}
+            {activeTab === 'lucro' && 'Calculadora de Lucro Real'}
+            {activeTab === 'landing' && 'Gerenciador do Site (Banners & Textos)'}
+            {activeTab === 'stories' && 'Painel Criativa Stories'}
+            {activeTab === 'vitrine' && 'Gestão de Estoque'}
+            {activeTab === 'automacoes' && 'Configurações Globais'}
+          </h1>
+          {activeTab === 'financeiro' && (
+            <button onClick={handleExport} className="btn-primary flex items-center gap-2 text-sm px-4 py-2">
+              <Download size={16} /> Exportar Relatório (XLSX)
+            </button>
+          )}
         </header>
 
         {/* LUCRO REAL */}

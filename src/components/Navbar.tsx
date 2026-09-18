@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { ShoppingCart, Bell, User, Heart, X, LogIn, Menu } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Image from 'next/image';
 import { useCart } from '@/contexts/CartContext';
 
 export default function Navbar() {
+  const pathname = usePathname();
   const { items } = useCart();
   const [user, setUser] = useState<any>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -16,6 +18,11 @@ export default function Navbar() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Não renderiza Navbar nas telas administrativas
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
 
   useEffect(() => {
     // Verificar sessão atual
@@ -99,6 +106,9 @@ export default function Navbar() {
           )}
         </div>
       </nav>
+
+      {/* Espaçador de compensação para barra fixa */}
+      <div className="h-[72px]" />
 
       {/* Auth Modal */}
       {showAuthModal && (
