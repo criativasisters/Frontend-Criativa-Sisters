@@ -117,6 +117,13 @@ export default function AdminDashboard() {
 
     const { data: stors } = await supabase.from('stories').select('*, products(*)').order('created_at', { ascending: false });
     if (stors) setStories(stors);
+
+    const { data: costs } = await supabase.from('cost_parameters').select('*');
+    if (costs && costs.length > 0) {
+      const configMap: any = {};
+      costs.forEach(c => { configMap[c.id] = Number(c.value); });
+      setCustoConfig(prev => ({ ...prev, ...configMap }));
+    }
   };
 
   // ---------------- FINANCEIRO (XLSX) ---------------- //
@@ -223,8 +230,24 @@ export default function AdminDashboard() {
     mao_de_obra_por_pedido: 5.00,
     taxa_stripe_pct: 3.99,
     taxa_stripe_fixo: 0.39,
-    frete_responsabilidade_pct: 0, // % do frete custeado pela empresa (0 = cliente paga tudo)
+    frete_responsabilidade_pct: 0,
+    tripo3d_cost_per_gen: 0.50,
+    server_cost_monthly: 40.00
   });
+
+  const saveCosts = async () => {
+    const updates = Object.keys(custoConfig).map(key => ({
+      id: key,
+      name: key, // Nome genérico para fallback se for novo
+      value: (custoConfig as any)[key]
+    }));
+    
+    // Faz upsert no Supabase
+    for (const item of updates) {
+      await supabase.from('cost_parameters').update({ value: item.value }).eq('id', item.id);
+    }
+    alert('Parâmetros de Custo salvos no Banco de Dados com sucesso!');
+  };
 
   const calcularLucro = (order: any) => {
     const receita = Number(order.total_price || 0);
@@ -233,12 +256,13 @@ export default function AdminDashboard() {
     const custoMaterial = weightG * custoConfig.pla_por_grama;
     const custoEnergia = (weightG / 100) * custoConfig.horas_por_100g * custoConfig.energia_por_hora;
     const custoMaoDeObra = custoConfig.mao_de_obra_por_pedido;
+    const custoIA = custoConfig.tripo3d_cost_per_gen; // Custo API Tripo3D gerando o modelo
     const taxaStripe = (receita * (custoConfig.taxa_stripe_pct / 100)) + custoConfig.taxa_stripe_fixo;
-    const custoTotal = custoMaterial + custoEnergia + custoMaoDeObra + taxaStripe;
+    const custoTotal = custoMaterial + custoEnergia + custoMaoDeObra + custoIA + taxaStripe;
     const lucroLiquido = receita - custoTotal;
     const margemPct = receita > 0 ? (lucroLiquido / receita) * 100 : 0;
 
-    return { receita, custoMaterial, custoEnergia, custoMaoDeObra, taxaStripe, custoTotal, lucroLiquido, margemPct };
+    return { receita, custoMaterial, custoEnergia, custoMaoDeObra, custoIA, taxaStripe, custoTotal, lucroLiquido, margemPct };
   };
 
   const lucroGlobal = orders.reduce((acc, o) => {
@@ -353,15 +377,20 @@ export default function AdminDashboard() {
               </div>
             </div>
             <div className="glass-panel p-6">
-              <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Settings size={18} className="text-[#FF3366]"/> Configurar Parâmetros de Custo</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+                <h3 className="font-bold text-lg flex items-center gap-2"><Settings size={18} className="text-[#FF3366]"/> Configurar Parâmetros de Custo Real</h3>
+                <button onClick={saveCosts} className="btn-primary py-2 px-4 text-sm flex items-center gap-2"><Save size={16}/> Salvar no Banco</button>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
                   { key: 'pla_por_grama', label: 'PLA (R$/grama)', step: '0.01' },
                   { key: 'energia_por_hora', label: 'Energia (R$/hora imp.)', step: '0.01' },
-                  { key: 'horas_por_100g', label: 'Horas impressas / 100g', step: '0.1' },
+                  { key: 'horas_por_100g', label: 'Horas / 100g', step: '0.1' },
                   { key: 'mao_de_obra_por_pedido', label: 'Mão de Obra (R$/pedido)', step: '0.5' },
                   { key: 'taxa_stripe_pct', label: 'Taxa Stripe (%)', step: '0.01' },
                   { key: 'taxa_stripe_fixo', label: 'Taxa Stripe Fixa (R$)', step: '0.01' },
+                  { key: 'tripo3d_cost_per_gen', label: 'Custo Tripo3D (R$/gen)', step: '0.05' },
+                  { key: 'server_cost_monthly', label: 'Servidor Render/Mês (R$)', step: '1.00' },
                 ].map(({ key, label, step }) => (
                   <div key={key}>
                     <label className="text-xs text-gray-400 block mb-1">{label}</label>
@@ -371,7 +400,7 @@ export default function AdminDashboard() {
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-gray-500 mt-4 flex items-center gap-1"><AlertCircle size={12}/> Recalcula em tempo real. Parâmetros salvos apenas na sessão atual.</p>
+              <p className="text-xs text-gray-500 mt-4 flex items-center gap-1"><AlertCircle size={12}/> A calculadora ajusta em tempo real. Clique em "Salvar no Banco" para persistir.</p>
             </div>
             <div className="glass-panel overflow-x-auto">
               <table className="w-full text-left text-xs min-w-[1000px]">
@@ -382,6 +411,7 @@ export default function AdminDashboard() {
                     <th className="p-3 text-right">Material</th>
                     <th className="p-3 text-right">Energia</th>
                     <th className="p-3 text-right">Mão de Obra</th>
+                    <th className="p-3 text-right">IA Tripo3D</th>
                     <th className="p-3 text-right">Stripe</th>
                     <th className="p-3 text-right">Custo Total</th>
                     <th className="p-3 text-right font-bold">Lucro</th>
@@ -389,23 +419,21 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {orders.length === 0 && <tr><td colSpan={9} className="p-8 text-center text-gray-500">Nenhum pedido ainda.</td></tr>}
-                  {orders.map(order => {
-                    const l = calcularLucro(order);
+                  {orders.length === 0 && <tr><td colSpan={10} className="p-8 text-center text-gray-500">Nenhum pedido calculado.</td></tr>}
+                  {orders.map(o => {
+                    const l = calcularLucro(o);
                     return (
-                      <tr key={order.id} className="hover:bg-white/5">
-                        <td className="p-3">
-                          <p className="font-bold text-white text-sm">{order.customer_name || 'Desconhecido'}</p>
-                          <p className="font-mono text-[10px] text-[#8A2BE2]">{order.id.split('-')[0]}</p>
-                        </td>
-                        <td className="p-3 text-right text-blue-300">R$ {l.receita.toFixed(2)}</td>
-                        <td className="p-3 text-right text-gray-400">R$ {l.custoMaterial.toFixed(2)}</td>
-                        <td className="p-3 text-right text-gray-400">R$ {l.custoEnergia.toFixed(2)}</td>
-                        <td className="p-3 text-right text-gray-400">R$ {l.custoMaoDeObra.toFixed(2)}</td>
-                        <td className="p-3 text-right text-gray-400">R$ {l.taxaStripe.toFixed(2)}</td>
-                        <td className="p-3 text-right text-red-300 font-bold">R$ {l.custoTotal.toFixed(2)}</td>
+                      <tr key={o.id} className="hover:bg-white/5 transition">
+                        <td className="p-3 truncate max-w-[150px]"><span className="text-gray-500 text-[10px] block">{o.id.split('-')[0]}</span> {o.customer_name}</td>
+                        <td className="p-3 text-right text-blue-400 font-bold">R$ {l.receita.toFixed(2)}</td>
+                        <td className="p-3 text-right text-red-300">R$ {l.custoMaterial.toFixed(2)}</td>
+                        <td className="p-3 text-right text-red-300">R$ {l.custoEnergia.toFixed(2)}</td>
+                        <td className="p-3 text-right text-red-300">R$ {l.custoMaoDeObra.toFixed(2)}</td>
+                        <td className="p-3 text-right text-red-300">R$ {l.custoIA.toFixed(2)}</td>
+                        <td className="p-3 text-right text-red-300">R$ {l.taxaStripe.toFixed(2)}</td>
+                        <td className="p-3 text-right text-red-500 font-bold">R$ {l.custoTotal.toFixed(2)}</td>
                         <td className={`p-3 text-right font-bold ${l.lucroLiquido >= 0 ? 'text-green-400' : 'text-red-400'}`}>R$ {l.lucroLiquido.toFixed(2)}</td>
-                        <td className={`p-3 text-right font-bold ${l.margemPct >= 30 ? 'text-green-400' : l.margemPct >= 10 ? 'text-yellow-400' : 'text-red-400'}`}>{l.margemPct.toFixed(1)}%</td>
+                        <td className={`p-3 text-right ${l.margemPct >= 20 ? 'text-green-400' : 'text-red-400'}`}>{l.margemPct.toFixed(1)}%</td>
                       </tr>
                     );
                   })}
