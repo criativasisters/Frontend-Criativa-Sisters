@@ -41,8 +41,8 @@ export function ScrollSnake() {
     let scrollVelocity = 0;
     let time = 0;
 
-    // Gera o traçado em ziguezague no documento
-    // O traçado fica estritamente nas margens laterais e cruza apenas nos intervalos das seções
+    // Gera o traçado orgânico (curvas)
+    // Uma ondulação MUITO suave na margem direita
     const buildPath = (): PathNode[] => {
       const docHeight = Math.max(
         document.documentElement.scrollHeight,
@@ -50,30 +50,29 @@ export function ScrollSnake() {
         window.innerHeight * 4
       );
 
-      // Margens seguras: longe do centro onde ficam os textos e cards
-      const margin = Math.min(100, Math.max(30, width * 0.05));
-      const leftX = margin;
-      const rightX = width - margin;
+      // Margens na direita - Amplitude bem menor para ser sutil
+      const rightOuter = width - Math.min(50, width * 0.05);
+      const rightInner = width - Math.min(100, width * 0.10);
 
-      // Waypoints de ziguezague descendo pelo documento a cada ~350px
+      // Waypoints descendo a cada 400px (curvas bem longas)
       const waypoints: PathNode[] = [];
-      const step = 380;
+      const step = 450;
       let y = 140;
-      let isRight = false;
+      let isOuter = false;
 
-      waypoints.push({ x: width * 0.5, y: 40 }); // Início no topo
+      // Início no topo direito
+      waypoints.push({ x: rightOuter, y: -50 });
 
-      while (y < docHeight) {
+      while (y < docHeight + 200) {
         waypoints.push({
-          x: isRight ? rightX : leftX,
+          x: isOuter ? rightOuter : rightInner,
           y: y
         });
         y += step;
-        isRight = !isRight;
+        isOuter = !isOuter;
       }
-      waypoints.push({ x: width * 0.5, y: docHeight - 50 }); // Fim no rodapé
 
-      // Interpolação de curva suave (Catmull-Rom / Bézier) gerando centenas de nós densos
+      // Interpolação de curva suave (Catmull-Rom)
       const densePath: PathNode[] = [];
       const samplesPerSegment = 24;
 
@@ -88,7 +87,6 @@ export function ScrollSnake() {
           const u2 = u * u;
           const u3 = u2 * u;
 
-          // Spline Catmull-Rom
           const x =
             0.5 *
             (2 * p1.x +
@@ -129,33 +127,27 @@ export function ScrollSnake() {
     window.addEventListener("resize", handleResize, { passive: true });
     window.addEventListener("scroll", handleScroll, { passive: true });
 
+    // Trazendo de volta as faíscas de forma mais sutil
     const spawnSparks = (x: number, y: number, count: number) => {
-      const palette = [
-        "rgba(255, 51, 102, ",  // Magenta Shock
-        "rgba(138, 43, 226, ", // Violeta Cósmico
-        "rgba(224, 130, 157, ", // Rosa Metálico
-        "rgba(255, 255, 255, "  // Luz Branca
-      ];
-
+      const palette = ["rgba(255, 51, 102, ", "rgba(138, 43, 226, ", "rgba(255, 255, 255, "];
       for (let i = 0; i < count; i++) {
         if (sparks.length >= maxSparks) break;
         const angle = Math.random() * Math.PI * 2;
-        const speed = 0.8 + Math.random() * 2.5;
+        const speed = 0.5 + Math.random() * 1.5;
         sparks.push({
-          x,
-          y,
+          x, y,
           vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed - 0.6,
-          size: 1.2 + Math.random() * 2.4,
-          alpha: 0.9,
-          decay: 0.02 + Math.random() * 0.03,
+          vy: Math.sin(angle) * speed - 0.4,
+          size: 1 + Math.random() * 1.5,
+          alpha: 0.7,
+          decay: 0.03 + Math.random() * 0.02,
           color: palette[Math.floor(Math.random() * palette.length)]
         });
       }
     };
 
     const render = () => {
-      time += 0.025;
+      time += 0.015; // Velocidade do tempo (respiração) muito mais lenta
 
       // Suavização do scroll com lerp
       currentScrollY += (targetScrollY - currentScrollY) * 0.12;
@@ -168,49 +160,29 @@ export function ScrollSnake() {
         document.body.scrollHeight,
         window.innerHeight
       );
+      
       const maxScroll = Math.max(1, docHeight - window.innerHeight);
-
-      // Posição alvo do bico extrusor no documento:
-      // Fica visível na altura do viewport (cerca de 55% da altura da tela)
-      const targetDocY = Math.min(
-        docHeight - 60,
-        Math.max(60, currentScrollY + window.innerHeight * 0.55)
-      );
-
-      // Encontra o índice no caminho correspondente a essa profundidade Y
-      let headIndex = 0;
-      for (let i = 0; i < densePath.length; i++) {
-        if (densePath[i].y <= targetDocY) {
-          headIndex = i;
-        } else {
-          break;
-        }
-      }
-
-      // Se estamos no início absoluto, pelo menos 1 ponto
+      const scrollProgress = Math.max(0, Math.min(1, currentScrollY / maxScroll));
+      let headIndex = Math.floor(scrollProgress * (densePath.length - 1));
       headIndex = Math.max(1, headIndex);
 
-      // DESENHA O FILAMENTO EXTRUDADO (De 0 até headIndex)
-      // Conforme o scroll sobe ou desce, a linha é desenhada ou desfeita em tempo real!
       if (headIndex > 1) {
         ctx.save();
 
-        // 1. Camada de Brilho Neon Externo (Magenta e Violeta)
+        // 1. Camada de Brilho Neon
         for (let i = 0; i < headIndex - 1; i += 2) {
           const pt1 = densePath[i];
           const pt2 = densePath[Math.min(i + 2, headIndex)];
 
-          // Converte coordenada do documento para coordenada da tela (viewport)
           const sY1 = pt1.y - currentScrollY;
           const sY2 = pt2.y - currentScrollY;
 
-          // Culling: só renderiza se estiver próximo do viewport
           if (sY1 < -100 && sY2 < -100) continue;
           if (sY1 > height + 100 && sY2 > height + 100) continue;
 
-          // Leve balanço orgânico para parecer viva
-          const sway1 = Math.sin(time * 2 + i * 0.08) * 3;
-          const sway2 = Math.sin(time * 2 + (i + 2) * 0.08) * 3;
+          // Balanço (sway) MUITO sutil e orgânico (movimenta só 1 pixel)
+          const sway1 = Math.sin(time + i * 0.05) * 1;
+          const sway2 = Math.sin(time + (i + 2) * 0.05) * 1;
 
           const prog = i / headIndex;
           const colorGrad = (i / 4) % 2 === 0 ? "#FF3366" : "#8A2BE2";
@@ -219,33 +191,29 @@ export function ScrollSnake() {
           ctx.moveTo(pt1.x + sway1, sY1);
           ctx.lineTo(pt2.x + sway2, sY2);
           ctx.strokeStyle = colorGrad;
-          ctx.lineWidth = 4.5;
+          ctx.lineWidth = 4;
           ctx.lineCap = "round";
-          ctx.shadowBlur = 16;
+          ctx.shadowBlur = 12;
           ctx.shadowColor = colorGrad;
-          ctx.globalAlpha = 0.55 + prog * 0.35; // Mais brilhante na ponta
+          ctx.globalAlpha = 0.2 + prog * 0.15; 
           ctx.stroke();
         }
 
-        // 2. Camada do Núcleo Incandescente (Fio de Luz Branca/Rosa)
+        // 2. Núcleo Incandescente
         ctx.shadowBlur = 4;
         ctx.shadowColor = "#FFFFFF";
-        ctx.globalAlpha = 0.85;
-        ctx.lineWidth = 1.6;
+        ctx.globalAlpha = 0.35;
+        ctx.lineWidth = 1.2;
         ctx.beginPath();
-
         let started = false;
         for (let i = 0; i <= headIndex; i += 2) {
           const pt = densePath[i];
           const sY = pt.y - currentScrollY;
-
           if (sY < -120 || sY > height + 120) {
             started = false;
             continue;
           }
-
-          const sway = Math.sin(time * 2 + i * 0.08) * 3;
-
+          const sway = Math.sin(time + i * 0.05) * 1;
           if (!started) {
             ctx.moveTo(pt.x + sway, sY);
             started = true;
@@ -258,49 +226,42 @@ export function ScrollSnake() {
         ctx.restore();
       }
 
-      // POSIÇÃO DA CABEÇA / BICO EXTRUSOR
+      // O Cometa Luminoso de Fundo
       const headPt = densePath[headIndex];
       const headScreenY = headPt.y - currentScrollY;
-      const headSway = Math.sin(time * 2 + headIndex * 0.08) * 3;
+      const headSway = Math.sin(time + headIndex * 0.05) * 1;
       const headScreenX = headPt.x + headSway;
 
-      // Se a cabeça estiver na tela, desenha o bico luminoso e gera faíscas
       if (headScreenY >= -50 && headScreenY <= height + 50) {
         ctx.save();
-        const pulse = 1 + Math.sin(time * 5) * 0.2;
+        const pulse = 1 + Math.sin(time * 2) * 0.1; // Pulsação mais suave
 
-        // Aura radial intensa
         const grad = ctx.createRadialGradient(
-          headScreenX,
-          headScreenY,
-          0,
-          headScreenX,
-          headScreenY,
-          32 * pulse
+          headScreenX, headScreenY, 0,
+          headScreenX, headScreenY, 70 * pulse
         );
-        grad.addColorStop(0, "rgba(255, 255, 255, 0.95)");
-        grad.addColorStop(0.25, "rgba(255, 51, 102, 0.8)");
-        grad.addColorStop(0.6, "rgba(138, 43, 226, 0.35)");
+        grad.addColorStop(0, "rgba(255, 255, 255, 0.7)");
+        grad.addColorStop(0.1, "rgba(255, 51, 102, 0.5)");
+        grad.addColorStop(0.4, "rgba(138, 43, 226, 0.2)");
         grad.addColorStop(1, "rgba(0, 0, 0, 0)");
 
         ctx.beginPath();
-        ctx.arc(headScreenX, headScreenY, 32 * pulse, 0, Math.PI * 2);
+        ctx.arc(headScreenX, headScreenY, 70 * pulse, 0, Math.PI * 2);
         ctx.fillStyle = grad;
         ctx.fill();
 
-        // Ponto central branco
         ctx.beginPath();
-        ctx.arc(headScreenX, headScreenY, 4.5, 0, Math.PI * 2);
+        ctx.arc(headScreenX, headScreenY, 3, 0, Math.PI * 2);
         ctx.fillStyle = "#FFFFFF";
-        ctx.shadowBlur = 18;
+        ctx.shadowBlur = 12;
         ctx.shadowColor = "#FF3366";
         ctx.fill();
         ctx.restore();
-
-        // Geração de faíscas quando em movimento ou idle
+        
+        // Spawn de faíscas minimalistas
         if (scrollVelocity > 1) {
-          spawnSparks(headScreenX, headScreenY, Math.min(4, Math.ceil(scrollVelocity * 0.3)));
-        } else if (Math.random() < 0.2) {
+          spawnSparks(headScreenX, headScreenY, Math.min(2, Math.ceil(scrollVelocity * 0.1)));
+        } else if (Math.random() < 0.05) {
           spawnSparks(headScreenX, headScreenY, 1);
         }
       }
@@ -319,9 +280,9 @@ export function ScrollSnake() {
 
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.size * s.alpha, 0, Math.PI * 2);
-        ctx.fillStyle = `${s.color}${s.alpha})`;
-        ctx.shadowBlur = 8;
-        ctx.shadowColor = "#FF3366";
+        ctx.fillStyle = `${s.color}${s.alpha * 0.6})`;
+        ctx.shadowBlur = 4;
+        ctx.shadowColor = "rgba(255, 51, 102, 0.5)";
         ctx.fill();
       }
 
@@ -340,8 +301,8 @@ export function ScrollSnake() {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 w-full h-full pointer-events-none z-[4]"
-      style={{ mixBlendMode: "screen" }}
+      className="fixed inset-0 w-full h-full pointer-events-none z-0"
+      style={{ mixBlendMode: "screen", opacity: 0.6 }}
     />
   );
 }

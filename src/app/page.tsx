@@ -40,21 +40,34 @@ export default function Home() {
     }, 3000);
 
     async function fetchData() {
-      const { data: bData } = await supabase.from('banners').select('*').eq('is_active', true).order('display_order');
-      if (bData) setBanners(bData);
+      try {
+        const { data: bData, error: bErr } = await supabase.from('banners').select('*').eq('is_active', true).order('display_order');
+        if (bData && !bErr) setBanners(bData);
+        else console.warn('Banners table not found or empty, using defaults.');
 
-      const { data: sData } = await supabase.from('stories').select('*, products(*)').eq('is_active', true).order('created_at', { ascending: false });
-      if (sData) setStories(sData);
+        const { data: sData, error: sErr } = await supabase.from('stories').select('*, products(*)').eq('is_active', true).order('created_at', { ascending: false });
+        if (sData && !sErr) setStories(sData);
+        else console.warn('Stories table not found or empty, using defaults.');
 
-      const { data } = await supabase.from('landing_content').select('*');
-      if (data) {
-        const mapped: any = {};
-        data.forEach(item => { mapped[item.id] = item; });
-        setSections(mapped);
+        const { data: lData, error: lErr } = await supabase.from('landing_content').select('*');
+        if (lData && !lErr) {
+          const mapped: any = {};
+          lData.forEach(item => { mapped[item.id] = item; });
+          setSections(mapped);
+        } else {
+          console.warn('Landing_content table not found, using default texts.');
+          setSections({
+            'hero_section': { title: 'Transforme suas Ideias em Realidade Volumétrica', subtitle: 'A primeira fábrica digital impulsionada por IA.', cta_text: 'Iniciar Meu Projeto' },
+            'creation_section': { title: 'Crie Sua Peça Agora', subtitle: 'Nossa Inteligência Artificial calculará o volume, extrairá as cores e te dará o orçamento instantâneo.', cta_text: 'Subir Imagem e Ver Mágica' }
+          });
+        }
+        
+        const { data: pData, error: pErr } = await supabase.from('products').select('*').limit(6);
+        if (pData && !pErr) setProducts(pData);
+        else console.warn('Products table not found or empty.');
+      } catch (err) {
+        console.error('Erro ao buscar dados do Supabase:', err);
       }
-      
-      const { data: pData } = await supabase.from('products').select('*').limit(6);
-      if (pData) setProducts(pData);
     }
     fetchData();
 
@@ -151,7 +164,7 @@ export default function Home() {
   return (
     <>
       {/* 3D INTRO ANIMATION */}
-      <div className={`fixed inset-0 z-[999] bg-[#050505] flex items-center justify-center transition-all duration-1000 ${showIntro ? 'opacity-100 visible' : 'opacity-0 invisible -translate-y-full'}`}>
+      <div className={`fixed inset-0 z-[999] bg-transparent flex items-center justify-center transition-all duration-1000 ${showIntro ? 'opacity-100 visible' : 'opacity-0 invisible -translate-y-full'}`}>
         <div className="relative text-center">
           {/* Logo que simula estar sendo impressa em 3D */}
           <div className="w-32 h-32 relative mx-auto mb-6 animate-pulse">
@@ -172,10 +185,10 @@ export default function Home() {
       <main className={`min-h-screen w-full overflow-x-hidden transition-all duration-1000 ${showIntro ? 'translate-y-20 opacity-0' : 'translate-y-0 opacity-100'}`}>
         
         {/* SESSÃO 1: BANNERS (Flash e Loop) */}
-        <section className="relative w-full bg-[#020202] overflow-hidden">
+        <section className="relative w-full bg-transparent overflow-hidden">
           {/* Glow ambient de fundo */}
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#FF3366]/10 rounded-full blur-[120px] pointer-events-none" />
-          <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#8A2BE2]/10 rounded-full blur-[120px] pointer-events-none" />
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-transparent/10 rounded-full blur-[120px] pointer-events-none" />
+          <div className="absolute top-0 right-1/4 w-96 h-96 bg-transparent/10 rounded-full blur-[120px] pointer-events-none" />
 
           {/* Flash Banner (Topo) - sem Flash Banner usa Hero padrão */}
           {flashBanners.length > 0 ? (
@@ -217,7 +230,7 @@ export default function Home() {
 
           {/* Marquee Banners (Loop Infinito) */}
           {loopBanners.length > 0 && (
-            <div className="w-full bg-[#111] border-b border-white/5 overflow-hidden py-4">
+            <div className="w-full bg-transparent border-b border-white/5 overflow-hidden py-4">
               <div className="flex gap-4 animate-marquee whitespace-nowrap">
                 {[...loopBanners, ...loopBanners].map((banner, i) => (
                   <div key={i} className="inline-block relative w-[280px] h-[160px] rounded-lg overflow-hidden shrink-0 border border-white/10 hover:border-[#FF3366] transition">
@@ -231,8 +244,8 @@ export default function Home() {
 
         {/* SESSÃO STORIES */}
         {stories.length > 0 && (
-          <section className="py-12 px-6 bg-[#050505] border-b border-white/5 relative overflow-hidden">
-            <div className="absolute top-0 left-1/3 w-72 h-32 bg-[#FF3366]/10 rounded-full blur-[100px] pointer-events-none" />
+          <section className="py-12 px-6 bg-transparent border-b border-white/5 relative overflow-hidden">
+            <div className="absolute top-0 left-1/3 w-72 h-32 bg-transparent/10 rounded-full blur-[100px] pointer-events-none" />
             <div className="max-w-6xl mx-auto relative z-10">
               <motion.div 
                 initial={{ opacity: 0, x: -20 }}
@@ -266,7 +279,7 @@ export default function Home() {
                     {story.thumbnail_url ? (
                       <Image src={story.thumbnail_url} alt="Story" fill className="object-cover group-hover:scale-110 transition duration-500" />
                     ) : (
-                      <div className="w-full h-full bg-[#111] flex items-center justify-center"><Play className="text-white/40"/></div>
+                      <div className="w-full h-full bg-transparent flex items-center justify-center"><Play className="text-white/40"/></div>
                     )}
                     <div className="absolute bottom-3 left-3 right-3 z-20 text-left">
                       <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[#FF3366] bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-md">
@@ -283,8 +296,8 @@ export default function Home() {
         {/* SESSÃO 2: CRIAÇÃO IA (Câmara de Impressão 3D) */}
         <section ref={createSectionRef} className="py-28 px-6 relative bg-gradient-to-b from-[#050505] via-[#090909] to-[#050505] overflow-hidden">
           {/* Luzes Ambientais Criativa Sisters */}
-          <div className="absolute top-1/2 left-0 w-96 h-96 bg-[#FF3366]/15 rounded-full blur-[150px] pointer-events-none" />
-          <div className="absolute top-1/2 right-0 w-96 h-96 bg-[#8A2BE2]/15 rounded-full blur-[150px] pointer-events-none" />
+          <div className="absolute top-1/2 left-0 w-96 h-96 bg-transparent/15 rounded-full blur-[150px] pointer-events-none" />
+          <div className="absolute top-1/2 right-0 w-96 h-96 bg-transparent/15 rounded-full blur-[150px] pointer-events-none" />
 
           {/* Divisor Luminoso Superior com feixe cósmico */}
           <motion.div 
@@ -310,7 +323,7 @@ export default function Home() {
               whileInView={{ scale: 1 }}
               viewport={{ once: true }}
               transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
-              className="inline-block text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full bg-[#FF3366]/15 text-[#FF3366] border border-[#FF3366]/40 mb-6 shadow-[0_0_20px_rgba(255,51,102,0.25)]"
+              className="inline-block text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full bg-transparent/15 text-[#FF3366] border border-[#FF3366]/40 mb-6 shadow-[0_0_20px_rgba(255,51,102,0.25)]"
             >
               ✨ IA Generativa Multicor
             </motion.span>
@@ -349,7 +362,7 @@ export default function Home() {
         {/* SESSÃO 3: VITRINE DE PROJETOS PRONTOS */}
         <section className="py-28 px-6 relative overflow-hidden">
           {/* Luz Ambiente Cósmica */}
-          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-[#8A2BE2]/12 rounded-full blur-[180px] pointer-events-none" />
+          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-transparent/12 rounded-full blur-[180px] pointer-events-none" />
 
           <div className="max-w-6xl mx-auto relative z-10">
             <motion.div 
@@ -359,7 +372,7 @@ export default function Home() {
               transition={{ duration: 0.7 }}
               className="text-center mb-16"
             >
-              <span className="inline-block text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full bg-[#8A2BE2]/15 text-[#E0829D] border border-[#8A2BE2]/40 mb-4 shadow-[0_0_15px_rgba(138,43,226,0.2)]">
+              <span className="inline-block text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full bg-transparent/15 text-[#E0829D] border border-[#8A2BE2]/40 mb-4 shadow-[0_0_15px_rgba(138,43,226,0.2)]">
                 Pronto para Entrega
               </span>
               <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight">Vitrine <span className="gradient-text">Premium</span></h2>
@@ -381,7 +394,7 @@ export default function Home() {
                     whileHover={{ y: -10, scale: 1.02 }}
                     className="glass-panel group overflow-hidden border-white/5 hover:border-[#FF3366]/60 hover:shadow-[0_0_40px_rgba(255,51,102,0.25)] transition-all duration-300"
                   >
-                    <div className="h-64 bg-[#111] flex items-center justify-center relative overflow-hidden">
+                    <div className="h-64 bg-transparent flex items-center justify-center relative overflow-hidden">
                       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent z-10" />
                       {prod.image_url ? (
                         <Image src={prod.image_url} alt={prod.name} fill className="object-cover z-0 group-hover:scale-110 transition-transform duration-700" />
@@ -416,7 +429,7 @@ export default function Home() {
                           weight_g: 250
                         });
                         alert('Adicionado ao carrinho!');
-                      }} className="w-full btn-secondary group-hover:border-[#FF3366] group-hover:bg-[#FF3366]/10 transition-all cursor-pointer font-bold py-3">Adicionar ao Carrinho</button>
+                      }} className="w-full btn-secondary group-hover:border-[#FF3366] group-hover:bg-transparent/10 transition-all cursor-pointer font-bold py-3">Adicionar ao Carrinho</button>
                     </div>
                   </motion.div>
                 ))
@@ -426,9 +439,9 @@ export default function Home() {
         </section>
 
         {/* SESSÃO 4: POR QUE ESCOLHER (Montagem de Engenharia / Blueprint) */}
-        <section className="py-28 px-6 bg-[#080808] border-y border-white/5 relative overflow-hidden">
-          <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#FF3366]/10 rounded-full blur-[160px] pointer-events-none" />
-          <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-[#8A2BE2]/10 rounded-full blur-[160px] pointer-events-none" />
+        <section className="py-28 px-6 bg-transparent border-y border-white/5 relative overflow-hidden">
+          <div className="absolute top-0 right-1/4 w-96 h-96 bg-transparent/10 rounded-full blur-[160px] pointer-events-none" />
+          <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-transparent/10 rounded-full blur-[160px] pointer-events-none" />
 
           <div className="max-w-6xl mx-auto relative z-10">
             <motion.div 
@@ -457,7 +470,7 @@ export default function Home() {
                   whileInView={{ rotate: 0, scale: 1 }}
                   viewport={{ once: true }}
                   transition={{ type: "spring", stiffness: 150, delay: 0.2 }}
-                  className="w-20 h-20 mx-auto rounded-2xl bg-[#FF3366]/10 flex items-center justify-center border border-[#FF3366]/30 shadow-[0_0_25px_rgba(255,51,102,0.25)]"
+                  className="w-20 h-20 mx-auto rounded-2xl bg-transparent/10 flex items-center justify-center border border-[#FF3366]/30 shadow-[0_0_25px_rgba(255,51,102,0.25)]"
                 >
                   <Zap size={36} className="text-[#FF3366]" />
                 </motion.div>
@@ -479,7 +492,7 @@ export default function Home() {
                   whileInView={{ rotate: 0, scale: 1 }}
                   viewport={{ once: true }}
                   transition={{ type: "spring", stiffness: 150, delay: 0.35 }}
-                  className="w-20 h-20 mx-auto rounded-2xl bg-[#8A2BE2]/10 flex items-center justify-center border border-[#8A2BE2]/30 shadow-[0_0_25px_rgba(138,43,226,0.25)]"
+                  className="w-20 h-20 mx-auto rounded-2xl bg-transparent/10 flex items-center justify-center border border-[#8A2BE2]/30 shadow-[0_0_25px_rgba(138,43,226,0.25)]"
                 >
                   <Printer size={36} className="text-[#8A2BE2]" />
                 </motion.div>
@@ -501,7 +514,7 @@ export default function Home() {
                   whileInView={{ rotate: 0, scale: 1 }}
                   viewport={{ once: true }}
                   transition={{ type: "spring", stiffness: 150, delay: 0.5 }}
-                  className="w-20 h-20 mx-auto rounded-2xl bg-[#E0829D]/10 flex items-center justify-center border border-[#E0829D]/30 shadow-[0_0_25px_rgba(224,130,157,0.25)]"
+                  className="w-20 h-20 mx-auto rounded-2xl bg-transparent/10 flex items-center justify-center border border-[#E0829D]/30 shadow-[0_0_25px_rgba(224,130,157,0.25)]"
                 >
                   <ShieldCheck size={36} className="text-[#E0829D]" />
                 </motion.div>
@@ -596,8 +609,8 @@ export default function Home() {
         </section>
 
         {/* SESSÃO 6: CONTATO E FOOTER */}
-        <section className="pt-28 pb-10 px-6 bg-[#020202] text-center border-t border-white/5 relative overflow-hidden">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[250px] bg-[#FF3366]/10 rounded-full blur-[140px] pointer-events-none" />
+        <section className="pt-28 pb-10 px-6 bg-transparent text-center border-t border-white/5 relative overflow-hidden">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[250px] bg-transparent/10 rounded-full blur-[140px] pointer-events-none" />
 
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
