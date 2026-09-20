@@ -21,8 +21,9 @@ export default function AdminDashboard() {
   
   // Form States
   const [showProductForm, setShowProductForm] = useState(false);
-  const [prodForm, setProdForm] = useState({ name: '', price: '', stock: '', category: '' });
+  const [prodForm, setProdForm] = useState({ name: '', price: '', stock: '', category: '', description: '', image_url: '', video_url: '' });
   const [editingProdId, setEditingProdId] = useState<string | null>(null);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
 
   const [showBannerForm, setShowBannerForm] = useState(false);
   const [bannerForm, setBannerForm] = useState({ type: 'loop', image_url: '', display_order: '0' });
@@ -192,6 +193,32 @@ export default function AdminDashboard() {
   };
 
   // ---------------- VITRINE ---------------- //
+  const handleGenerateAI = async () => {
+    if (!prodForm.name) {
+      alert("Preencha o Nome do Produto primeiro.");
+      return;
+    }
+    setIsGeneratingAI(true);
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+      const res = await fetch(`${backendUrl}/api/admin/generate-copy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: prodForm.name, category: prodForm.category })
+      });
+      const data = await res.json();
+      if (data.success && data.text) {
+        setProdForm(prev => ({ ...prev, description: data.text }));
+      } else {
+        alert("Falha ao gerar texto: " + (data.error || 'Erro desconhecido'));
+      }
+    } catch (e) {
+      alert("Erro de conexão ao gerar texto via IA.");
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
+
   const saveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (editingProdId) {
@@ -199,14 +226,22 @@ export default function AdminDashboard() {
     } else {
       await supabase.from('products').insert(prodForm);
     }
-    setProdForm({ name: '', price: '', stock: '', category: '' });
+    setProdForm({ name: '', price: '', stock: '', category: '', description: '', image_url: '', video_url: '' });
     setEditingProdId(null);
     setShowProductForm(false);
     fetchData();
   };
 
   const openEditProduct = (prod: any) => {
-    setProdForm({ name: prod.name, price: prod.price, stock: prod.stock, category: prod.category || '' });
+    setProdForm({ 
+      name: prod.name, 
+      price: prod.price, 
+      stock: prod.stock, 
+      category: prod.category || '',
+      description: prod.description || '',
+      image_url: prod.image_url || '',
+      video_url: prod.video_url || ''
+    });
     setEditingProdId(prod.id);
     setShowProductForm(true);
   };
@@ -627,17 +662,40 @@ export default function AdminDashboard() {
         {activeTab === 'vitrine' && (
           <div className="max-w-4xl space-y-6">
             <div className="flex justify-end">
-              <button onClick={() => { setEditingProdId(null); setProdForm({name:'',price:'',stock:'',category:''}); setShowProductForm(!showProductForm); }} className="btn-primary py-2 px-4 flex items-center gap-2 text-sm">
+              <button onClick={() => { setEditingProdId(null); setProdForm({name:'',price:'',stock:'',category:'',description:'',image_url:'',video_url:''}); setShowProductForm(!showProductForm); }} className="btn-primary py-2 px-4 flex items-center gap-2 text-sm">
                 {showProductForm ? 'Cancelar' : <><Plus size={16}/> Novo Produto</>}
               </button>
             </div>
 
             {showProductForm && (
               <form onSubmit={saveProduct} className="glass-panel p-6 grid grid-cols-2 gap-4">
-                <div className="col-span-2"><label className="text-sm text-gray-400 block mb-1">Nome</label><input required type="text" value={prodForm.name} onChange={e=>setProdForm({...prodForm, name: e.target.value})} className="w-full bg-[#121212] border border-white/10 p-2 rounded text-white" /></div>
-                <div><label className="text-sm text-gray-400 block mb-1">Preço (R$)</label><input required type="number" step="0.01" value={prodForm.price} onChange={e=>setProdForm({...prodForm, price: e.target.value})} className="w-full bg-[#121212] border border-white/10 p-2 rounded text-white" /></div>
-                <div><label className="text-sm text-gray-400 block mb-1">Estoque</label><input required type="number" value={prodForm.stock} onChange={e=>setProdForm({...prodForm, stock: e.target.value})} className="w-full bg-[#121212] border border-white/10 p-2 rounded text-white" /></div>
-                <div className="col-span-2"><button type="submit" className="w-full btn-secondary">Salvar Produto</button></div>
+                <div className="col-span-2 md:col-span-1"><label className="text-sm text-gray-400 block mb-1">Nome</label><input required type="text" value={prodForm.name} onChange={e=>setProdForm({...prodForm, name: e.target.value})} className="w-full bg-[#121212] border border-white/10 p-2 rounded text-white outline-none focus:border-[#FF3366]" /></div>
+                <div className="col-span-2 md:col-span-1"><label className="text-sm text-gray-400 block mb-1">Categoria</label><input type="text" value={prodForm.category} onChange={e=>setProdForm({...prodForm, category: e.target.value})} className="w-full bg-[#121212] border border-white/10 p-2 rounded text-white outline-none focus:border-[#FF3366]" placeholder="Ex: Action Figure, Utensílios..." /></div>
+                
+                <div className="col-span-2 md:col-span-1"><label className="text-sm text-gray-400 block mb-1">Preço (R$)</label><input required type="number" step="0.01" value={prodForm.price} onChange={e=>setProdForm({...prodForm, price: e.target.value})} className="w-full bg-[#121212] border border-white/10 p-2 rounded text-white outline-none focus:border-[#FF3366]" /></div>
+                <div className="col-span-2 md:col-span-1"><label className="text-sm text-gray-400 block mb-1">Estoque</label><input required type="number" value={prodForm.stock} onChange={e=>setProdForm({...prodForm, stock: e.target.value})} className="w-full bg-[#121212] border border-white/10 p-2 rounded text-white outline-none focus:border-[#FF3366]" /></div>
+                
+                <div className="col-span-2">
+                  <label className="text-sm text-gray-400 block mb-1">URL da Imagem (Principal)</label>
+                  <input type="url" value={prodForm.image_url} onChange={e=>setProdForm({...prodForm, image_url: e.target.value})} className="w-full bg-[#121212] border border-white/10 p-2 rounded text-white outline-none focus:border-[#FF3366]" placeholder="https://..." />
+                </div>
+                
+                <div className="col-span-2">
+                  <label className="text-sm text-gray-400 block mb-1">URL do Vídeo (Opcional - Ex: Demo 360º)</label>
+                  <input type="url" value={prodForm.video_url} onChange={e=>setProdForm({...prodForm, video_url: e.target.value})} className="w-full bg-[#121212] border border-white/10 p-2 rounded text-white outline-none focus:border-[#FF3366]" placeholder="https://..." />
+                </div>
+
+                <div className="col-span-2">
+                  <div className="flex justify-between items-end mb-1">
+                    <label className="text-sm text-gray-400 block">Descrição do Produto</label>
+                    <button type="button" onClick={handleGenerateAI} disabled={isGeneratingAI} className="text-[#8A2BE2] hover:text-[#FF3366] text-xs flex items-center gap-1 transition-colors">
+                      {isGeneratingAI ? 'Gerando...' : '✨ Ajuda com IA'}
+                    </button>
+                  </div>
+                  <textarea value={prodForm.description} onChange={e=>setProdForm({...prodForm, description: e.target.value})} className="w-full bg-[#121212] border border-white/10 p-2 rounded text-white outline-none focus:border-[#FF3366] h-32 resize-none" placeholder="Descreva os diferenciais, material e benefícios da peça..." />
+                </div>
+
+                <div className="col-span-2 mt-2"><button type="submit" className="w-full btn-secondary py-3">Salvar Produto na Vitrine</button></div>
               </form>
             )}
 
@@ -650,8 +708,20 @@ export default function AdminDashboard() {
                   {products.length === 0 && <tr><td colSpan={4} className="p-8 text-center text-gray-500">Nenhum produto cadastrado.</td></tr>}
                   {products.map((prod) => (
                     <tr key={prod.id} className="hover:bg-white/5 transition">
-                      <td className="p-4 font-bold">{prod.name}</td>
-                      <td className="p-4 text-green-400">R$ {prod.price}</td>
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          {prod.image_url ? (
+                            <img src={prod.image_url} alt={prod.name} className="w-10 h-10 object-cover rounded border border-white/10" />
+                          ) : (
+                            <div className="w-10 h-10 bg-black rounded border border-white/10 flex items-center justify-center text-gray-700"><Package size={16}/></div>
+                          )}
+                          <div>
+                            <p className="font-bold">{prod.name}</p>
+                            <p className="text-xs text-gray-500">{prod.category || 'Geral'}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4 text-green-400 font-bold">R$ {prod.price}</td>
                       <td className="p-4">{prod.stock} un.</td>
                       <td className="p-4 text-right">
                         <button onClick={() => openEditProduct(prod)} className="text-blue-400 hover:text-white p-2"><Edit size={16}/></button>
