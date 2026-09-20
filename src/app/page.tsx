@@ -127,12 +127,14 @@ export default function Home() {
                 clearInterval(pollInterval);
                 setStatusText("Geometria finalizada! Abrindo preview...");
                 
+                const d = statusData.dimensions || { x: 15.0, y: 15.0, z: 12.0 };
                 const queryParams = new URLSearchParams({
-                  x: "15.0",
-                  y: "15.0",
-                  z: "12.0",
+                  x: d.x.toString(),
+                  y: d.y.toString(),
+                  z: d.z.toString(),
                   colors: data.colors.join(','),
-                  modelUrl: statusData.modelUrl || 'mock'
+                  modelUrl: statusData.modelUrl || 'mock',
+                  fallback: statusData.isFallback ? 'true' : 'false'
                 }).toString();
                 
                 router.push(`/preview/${data.taskId}?${queryParams}`);
