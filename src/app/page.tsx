@@ -34,6 +34,34 @@ export default function Home() {
 
   // States Modal Stories
   const [activeStory, setActiveStory] = useState<any>(null);
+  const [storyLoopCount, setStoryLoopCount] = useState(0);
+
+  const handleStoryNext = () => {
+    if (!activeStory || stories.length === 0) return;
+    const currentIndex = stories.findIndex(s => s.id === activeStory.id);
+    const nextIndex = (currentIndex + 1) % stories.length;
+    setActiveStory(stories[nextIndex]);
+    setStoryLoopCount(0);
+  };
+
+  const handleStoryPrev = () => {
+    if (!activeStory || stories.length === 0) return;
+    const currentIndex = stories.findIndex(s => s.id === activeStory.id);
+    const prevIndex = (currentIndex - 1 + stories.length) % stories.length;
+    setActiveStory(stories[prevIndex]);
+    setStoryLoopCount(0);
+  };
+
+  const handleVideoEnded = () => {
+    if (storyLoopCount >= 1) {
+      handleStoryNext();
+    } else {
+      setStoryLoopCount(prev => prev + 1);
+      // Play again
+      const videoEl = document.getElementById('story-video-player') as HTMLVideoElement;
+      if (videoEl) videoEl.play();
+    }
+  };
 
   // States Upload IA
   const [image, setImage] = useState<File | null>(null);
@@ -410,7 +438,7 @@ export default function Home() {
                     <div className="h-64 bg-transparent flex items-center justify-center relative overflow-hidden">
                       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent z-10" />
                       {prod.image_url ? (
-                        <Image src={prod.image_url} alt={prod.name} fill className="object-cover z-0 group-hover:scale-110 transition-transform duration-700" />
+                        <Image src={prod.image_url || '/placeholder.png'} alt={prod.name} fill className="object-cover z-0 group-hover:scale-110 transition-transform duration-700" />
                       ) : (
                         <Package size={64} className="text-gray-600 group-hover:text-[#FF3366] transition-colors z-0" />
                       )}
@@ -673,7 +701,12 @@ export default function Home() {
           </button>
           
           <div className="w-full max-w-[400px] h-[80vh] bg-black rounded-xl overflow-hidden relative shadow-[0_0_50px_rgba(255,51,102,0.2)]">
-            <video src={activeStory.video_url} autoPlay loop playsInline className="w-full h-full object-cover" />
+            
+            {/* Arrows */}
+            <button onClick={(e) => { e.stopPropagation(); handleStoryPrev(); }} className="absolute left-2 top-1/2 -translate-y-1/2 z-50 p-2 bg-black/50 text-white rounded-full hover:bg-black/80 transition">&larr;</button>
+            <button onClick={(e) => { e.stopPropagation(); handleStoryNext(); }} className="absolute right-2 top-1/2 -translate-y-1/2 z-50 p-2 bg-black/50 text-white rounded-full hover:bg-black/80 transition">&rarr;</button>
+            
+            <video id="story-video-player" src={activeStory.video_url} autoPlay playsInline onEnded={handleVideoEnded} className="w-full h-full object-cover" />
             
             {activeStory.products && (
               <div className="absolute bottom-6 left-6 right-6 p-4 glass-panel flex items-center justify-between">

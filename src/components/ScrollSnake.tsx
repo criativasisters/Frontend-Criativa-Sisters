@@ -143,9 +143,7 @@ export function ScrollSnake() {
 
       // Controle de Opacidade Global (Esconde na primeira sessão)
       // Fade in de Y=300 até Y=800
-      let globalOpacity = (currentScrollY - 20) / 100;
-      globalOpacity = Math.max(0, Math.min(1, globalOpacity));
-
+      let globalOpacity = 1; // Sempre visível
       ctx.clearRect(0, 0, width, height);
 
       // Se estiver no topo (Hero section), não desenha para economizar CPU

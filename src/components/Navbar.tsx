@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { motion } from 'framer-motion';
 import { ShoppingCart, Bell, User, Heart, X, LogIn, Menu } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Image from 'next/image';
@@ -66,7 +67,7 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#050505]/90 backdrop-blur-md border-b border-white/10 px-6 py-4 flex items-center justify-between">
+      <motion.nav initial={{ y: -100 }} animate={{ y: 0 }} transition={{ delay: pathname === '/' ? 2.5 : 0, duration: 0.8, ease: "easeOut" }} className="fixed top-0 left-0 right-0 z-50 bg-[#050505]/90 backdrop-blur-md border-b border-white/10 px-6 py-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3">
           <Image src="/logos/logo-3d-metallic.jpg" alt="Logo" width={32} height={32} className="rounded-full" />
           <span className="font-bold text-lg hidden md:block">Criativa Sisters</span>
@@ -106,7 +107,7 @@ export default function Navbar() {
             </button>
           )}
         </div>
-      </nav>
+      </motion.nav>
 
       {/* Espaçador de compensação para barra fixa */}
       <div className="h-[72px]" />
