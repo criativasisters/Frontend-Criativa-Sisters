@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { Printer, Package, Zap, ShieldCheck, Star, MessageCircle, Play, X, ShoppingBag } from 'lucide-react';
 import { supabase } from "@/lib/supabase";
 import { useCart } from '@/contexts/CartContext';
@@ -462,7 +463,7 @@ export default function Home() {
                           const { data: { session } } = await supabase.auth.getSession();
                           if(!session) { toast.error('Faça login para favoritar!'); return; }
                           await supabase.from('favorites').insert({ user_id: session.user.id, product_id: prod.id });
-                          alert('Adicionado aos favoritos!');
+                          toast.success('Adicionado aos favoritos com sucesso!', { icon: '❤️' });
                         }} className="text-gray-400 hover:text-[#FF3366] transition cursor-pointer p-1.5 rounded-full hover:bg-white/5">
                           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
                         </button>
@@ -478,7 +479,7 @@ export default function Home() {
                           type: 'product',
                           weight_g: 250
                         });
-                        alert('Adicionado ao carrinho!');
+                        toast.success('Peça adicionada ao carrinho!', { icon: '🛒' });
                       }} className="w-full btn-secondary group-hover:border-[#FF3366] group-hover:bg-transparent/10 transition-all cursor-pointer font-bold py-3">Adicionar ao Carrinho</button>
                     </div>
                   </motion.div>

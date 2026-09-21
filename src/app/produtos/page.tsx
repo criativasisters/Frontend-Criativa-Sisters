@@ -7,6 +7,14 @@ import { useCart } from "@/contexts/CartContext";
 import { ShoppingBag, ArrowLeft, X, Package, ShieldCheck } from "lucide-react";
 import { motion } from "framer-motion";
 
+// Helper to fix broken relative URLs in the database
+const getValidUrl = (url: string | null | undefined) => {
+  if (!url) return '/placeholder.png';
+  if (url.startsWith('http')) return url;
+  if (url.startsWith('media/')) return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${url}`;
+  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/${url}`;
+};
+
 export default function ProdutosPage() {
   const router = useRouter();
   const { addToCart } = useCart();
@@ -79,8 +87,8 @@ export default function ProdutosPage() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
                     <span className="text-white font-bold flex items-center gap-2"><ShoppingBag size={16}/> Comprar</span>
                   </div>
-                  {prod.image_url ? (
-                    <img src={prod.image_url} alt={prod.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  {getValidUrl(prod.image_url) ? (
+                    <img src={getValidUrl(prod.image_url)} alt={prod.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                   ) : (
                     <Package size={48} className="text-white/10" />
                   )}
@@ -113,10 +121,10 @@ export default function ProdutosPage() {
             </button>
             
             <div className="w-full md:w-1/2 bg-[#050505] relative min-h-[300px] flex items-center justify-center">
-              {quickViewProduct.video_url ? (
-                 <video src={quickViewProduct.video_url} autoPlay loop muted playsInline className="w-full h-full object-cover" />
-              ) : quickViewProduct.image_url ? (
-                 <img src={quickViewProduct.image_url} alt={quickViewProduct.name} className="w-full h-full object-cover" />
+              {getValidUrl(quickViewProduct.video_url) ? (
+                 <video src={getValidUrl(quickViewProduct.video_url)} autoPlay loop muted playsInline className="w-full h-full object-cover" />
+              ) : getValidUrl(quickViewProduct.image_url) ? (
+                 <img src={getValidUrl(quickViewProduct.image_url)} alt={quickViewProduct.name} className="w-full h-full object-cover" />
               ) : (
                  <div className="text-gray-600 flex flex-col items-center"><Package size={48} /><p className="mt-2 text-sm">Sem Mídia</p></div>
               )}
@@ -136,7 +144,7 @@ export default function ProdutosPage() {
               <div className="flex gap-4">
                 <button 
                   onClick={() => {
-                    addToCart({ id: quickViewProduct.id, name: quickViewProduct.name, price: Number(quickViewProduct.price), image_url: quickViewProduct.image_url, quantity: 1, type: 'product' });
+                    addToCart({ id: quickViewProduct.id, name: quickViewProduct.name, price: Number(quickViewProduct.price), image_url: getValidUrl(quickViewProduct.image_url), quantity: 1, type: 'product' });
                     setQuickViewProduct(null);
                     router.push('/carrinho');
                   }}
