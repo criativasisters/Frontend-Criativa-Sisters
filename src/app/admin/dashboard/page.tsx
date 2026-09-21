@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Box, Layers, Settings, Phone, Save, Edit, Plus, Package, DollarSign, Download, Image as ImageIcon, Video, Trash, TrendingUp, AlertCircle, LogOut, RefreshCw, ExternalLink, Zap } from 'lucide-react';
+import { Box, ShoppingCart, Layers, Settings, Phone, Save, Edit, Plus, Package, DollarSign, Download, Image as ImageIcon, Video, Trash, TrendingUp, AlertCircle, LogOut, RefreshCw, ExternalLink, Zap } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import * as XLSX from 'xlsx';
 import Image from 'next/image';
@@ -11,7 +11,10 @@ import imageCompression from 'browser-image-compression';
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'financeiro' | 'vitrine' | 'landing' | 'stories' | 'automacoes' | 'lucro'>('financeiro');
+  // 📈 INSIGHTS STATES
+  const [insightCarts, setInsightCarts] = useState<any[]>([]);
+  const [insightClicks, setInsightClicks] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'financeiro' | 'vitrine' | 'landing' | 'stories' | 'automacoes' | 'lucro' | 'insights'>('financeiro');
   
   // Supabase States
   const [orders, setOrders] = useState<any[]>([]);
@@ -431,7 +434,73 @@ export default function AdminDashboard() {
         </header>
 
         {/* LUCRO REAL */}
-        {activeTab === 'lucro' && (
+        
+            {/* ======================================================== */}
+            {/* ABA: INSIGHTS E RASTREAMENTO */}
+            {/* ======================================================== */}
+            {activeTab === 'insights' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Módulo de Espionagem e Insights</h1>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Carrinhos Abandonados */}
+                  <div className="glass-panel p-6 border-blue-500/20">
+                    <h2 className="text-lg font-bold text-blue-400 mb-4 flex items-center gap-2"><ShoppingCart size={20}/> Carrinhos Abandonados/Ativos</h2>
+                    <div className="space-y-3">
+                      {insightCarts.length === 0 && <p className="text-sm text-gray-500">Nenhum carrinho ativo no momento.</p>}
+                      {insightCarts.map((cart: any) => (
+                        <div key={cart.id} className="p-3 bg-black/40 rounded border border-white/5">
+                          <p className="text-sm font-bold text-white mb-1">Usuário: <span className="text-gray-400 font-normal">{cart.profiles?.email || 'Desconhecido'}</span></p>
+                          <p className="text-xs text-gray-500 mb-2">Última ação: {new Date(cart.last_updated).toLocaleString()}</p>
+                          <div className="flex flex-wrap gap-2">
+                            {cart.items.map((item: any, idx: number) => (
+                              <span key={idx} className="bg-white/10 px-2 py-1 rounded text-[10px] text-gray-300">
+                                {item.quantity}x {item.name}
+                              </span>
+                            ))}
+                          </div>
+                          <p className="text-sm font-bold text-[#FF3366] mt-2">Valor Parado: R$ {cart.total_value.toFixed(2)}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Top Produtos Clicados */}
+                  <div className="glass-panel p-6 border-purple-500/20">
+                    <h2 className="text-lg font-bold text-purple-400 mb-4 flex items-center gap-2"><Layers size={20}/> Produtos Mais Abertos (Vitrine)</h2>
+                    <div className="space-y-2">
+                      {insightClicks.length === 0 && <p className="text-sm text-gray-500">Nenhum clique registrado ainda.</p>}
+                      {/* Agrupar cliques por produto */}
+                      {Object.values(insightClicks.reduce((acc: any, click: any) => {
+                        const name = click.products?.name || 'Desconhecido';
+                        if (!acc[name]) acc[name] = { name, count: 0 };
+                        acc[name].count++;
+                        return acc;
+                      }, {} as any)).sort((a: any, b: any) => b.count - a.count).map((item: any, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-3 bg-black/40 rounded border border-white/5">
+                          <span className="text-sm font-bold">{idx + 1}. {item.name}</span>
+                          <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-1 rounded-full">{item.count} aberturas</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="glass-panel p-6 border-[#FF3366]/20">
+                  <h2 className="text-lg font-bold text-[#FF3366] mb-2 flex items-center gap-2">Instruções: Google Analytics & Microsoft Clarity</h2>
+                  <p className="text-sm text-gray-300 mb-4">A Camada Demográfica e Mapas de Calor são processadas por servidores externos para não sobrecarregar nosso banco de dados. Siga os passos:</p>
+                  <ul className="list-disc list-inside text-xs text-gray-400 space-y-2">
+                    <li>Crie uma conta gratuita no <strong>Microsoft Clarity</strong> (clarity.microsoft.com).</li>
+                    <li>Crie uma conta gratuita no <strong>Google Analytics 4</strong> (analytics.google.com).</li>
+                    <li>Adicione os IDs de rastreio gerados por eles no arquivo `src/app/layout.tsx` dentro da tag `&lt;head&gt;`.</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+            
+            {activeTab === 'lucro' && (
           <div className="space-y-8 max-w-6xl">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="glass-panel p-6 border-l-4 border-blue-500">

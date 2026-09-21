@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 
 export type CartItem = {
   id: string; // ID do produto ou taskId da IA
@@ -38,9 +39,34 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (saved) setItems(JSON.parse(saved));
   }, []);
 
-  // Sync to local storage
+  // Sync to local storage & Supabase (Abandoned Carts Insight)
   useEffect(() => {
     localStorage.setItem('cs_cart', JSON.stringify(items));
+    
+    // Sincronizar com banco de dados para rastreio de Carrinho Abandonado
+    const syncCart = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return; // Só rastreia logados
+
+      const totalValue = items.reduce((acc, i) => acc + (i.price * i.quantity), 0);
+      
+      if (items.length > 0) {
+        await supabase.from('analytics_carts').upsert({
+          user_id: session.user.id,
+          items: items,
+          total_value: totalValue,
+          status: 'abandoned', // Fica como abandonado até ele finalizar a compra no checkout
+          last_updated: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+      } else {
+        // Se esvaziou, podemos deletar ou marcar como limpo.
+        await supabase.from('analytics_carts').delete().eq('user_id', session.user.id);
+      }
+    };
+    
+    // Debounce leve para não sobrecarregar
+    const timeout = setTimeout(syncCart, 1000);
+    return () => clearTimeout(timeout);
   }, [items]);
 
   const addToCart = (newItem: CartItem) => {
