@@ -17,7 +17,12 @@ export default function AdminDashboard() {
   const [landingContent, setLandingContent] = useState<any[]>([]);
   const [banners, setBanners] = useState<any[]>([]);
   const [stories, setStories] = useState<any[]>([]);
+  
   const [whatsapp, setWhatsapp] = useState('');
+  
+  // Security State
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+
   
   // Form States
   const [showProductForm, setShowProductForm] = useState(false);
