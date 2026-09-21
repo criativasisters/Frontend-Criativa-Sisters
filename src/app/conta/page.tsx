@@ -6,6 +6,15 @@ import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { User, Heart, Package, LogOut } from 'lucide-react';
 
+
+// Helper to fix broken relative URLs in the database
+const getValidUrl = (url: string | null | undefined) => {
+  if (!url) return '/placeholder.png';
+  if (url.startsWith('http')) return url;
+  if (url.startsWith('media/')) return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${url}`;
+  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/${url}`;
+};
+
 export default function Conta() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
