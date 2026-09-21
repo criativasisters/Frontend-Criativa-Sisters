@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useCart } from '@/contexts/CartContext';
+import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { Truck, Tag, CreditCard, Lock, CheckCircle, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -104,7 +105,7 @@ export default function CheckoutPage() {
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedShipping) {
-      alert("Selecione um método de envio.");
+      toast.error('Selecione um método de envio para prosseguir.');
       return;
     }
 

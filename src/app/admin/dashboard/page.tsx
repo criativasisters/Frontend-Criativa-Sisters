@@ -166,7 +166,16 @@ export default function AdminDashboard() {
     const { data: stors } = await supabase.from('stories').select('*, products(*)').order('created_at', { ascending: false });
     if (stors) setStories(stors);
 
+
     const { data: costs } = await supabase.from('cost_parameters').select('*');
+    
+    // Insights Fetch
+    const { data: carts } = await supabase.from('analytics_carts').select('*').order('last_updated', { ascending: false });
+    if (carts) setInsightCarts(carts);
+
+    const { data: clicks } = await supabase.from('analytics_product_clicks').select('*, products(name)').order('clicked_at', { ascending: false });
+    if (clicks) setInsightClicks(clicks);
+
     const { data: cats } = await supabase.from('categories').select('*').order('name');
     if (cats) setCategories(cats);
     if (costs && costs.length > 0) {

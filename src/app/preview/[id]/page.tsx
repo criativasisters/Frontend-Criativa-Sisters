@@ -7,6 +7,7 @@ import { MessageCircle, CheckCircle, Package, Plus, Minus, Tag, Play, Pause, Ref
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useCart } from '@/contexts/CartContext';
+import { toast } from 'sonner';
 
 function RealModel({ url, scaleMultiplier }: { url: string; scaleMultiplier: number }) {
   const { scene } = useGLTF(url);
@@ -116,7 +117,7 @@ export default function PreviewPage() {
     if (redirectCheckout) {
       router.push('/checkout');
     } else {
-      alert('Peça adicionada ao carrinho!');
+      toast.success('Peça personalizada adicionada ao carrinho!', { icon: '🤖' });
     }
   };
 

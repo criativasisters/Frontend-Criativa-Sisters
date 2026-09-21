@@ -149,7 +149,7 @@ export default function Conta() {
                       <div key={prod.id} className="bg-[#111] border border-white/10 rounded-lg overflow-hidden group">
                         <div className="h-48 relative">
                           {prod.image_url ? (
-                            <Image src={prod.image_url} alt={prod.name} fill className="object-cover" />
+                            <img src={getValidUrl(prod.image_url)} alt={prod.name} className="absolute inset-0 w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center"><Package size={48} className="text-gray-600" /></div>
                           )}
