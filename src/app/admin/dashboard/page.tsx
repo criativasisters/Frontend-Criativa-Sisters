@@ -1,3 +1,4 @@
+import { toast } from 'sonner';
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -6,6 +7,7 @@ import { Box, Layers, Settings, Phone, Save, Edit, Plus, Package, DollarSign, Do
 import { supabase } from '@/lib/supabase';
 import * as XLSX from 'xlsx';
 import Image from 'next/image';
+import imageCompression from 'browser-image-compression';
 
 export default function AdminDashboard() {
   const router = useRouter();

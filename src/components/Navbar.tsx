@@ -1,3 +1,4 @@
+import { toast } from 'sonner';
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -49,7 +50,7 @@ export default function Navbar() {
           options: { data: { full_name: name } }
         });
         if (error) throw error;
-        alert('Cadastro realizado! (Se necessário, verifique o email)');
+        toast.success('Cadastro realizado com sucesso!');
         setShowAuthModal(false);
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -57,7 +58,7 @@ export default function Navbar() {
         setShowAuthModal(false);
       }
     } catch (error: any) {
-      alert(error.message);
+      toast.error(error.message || 'Ocorreu um erro');
     } finally {
       setLoading(false);
     }

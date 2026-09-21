@@ -1,3 +1,4 @@
+import { toast } from 'sonner';
 "use client";
 
 import { useEffect, useState, useRef } from "react";
@@ -22,6 +23,7 @@ export default function Home() {
   // Estados Dinâmicos do Supabase (CMS Headless)
   const [sections, setSections] = useState<any>({});
   const [products, setProducts] = useState<any[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [banners, setBanners] = useState<any[]>([]);
   const [stories, setStories] = useState<any[]>([]);
   
@@ -421,7 +423,7 @@ export default function Home() {
                         <h3 className="text-xl font-bold group-hover:text-white transition-colors leading-tight">{prod.name}</h3>
                         <button onClick={async () => {
                           const { data: { session } } = await supabase.auth.getSession();
-                          if(!session) { alert('Faça login para favoritar!'); return; }
+                          if(!session) { toast.error('Faça login para favoritar!'); return; }
                           await supabase.from('favorites').insert({ user_id: session.user.id, product_id: prod.id });
                           alert('Adicionado aos favoritos!');
                         }} className="text-gray-400 hover:text-[#FF3366] transition cursor-pointer p-1.5 rounded-full hover:bg-white/5">
