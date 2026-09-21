@@ -46,7 +46,7 @@ export default function ProdutosPage() {
         <div className="mb-12 flex flex-wrap gap-3">
           <button 
             onClick={() => setSelectedCategory(null)} 
-            className={\`px-6 py-3 rounded-full text-sm font-semibold transition-all \${!selectedCategory ? 'bg-[#FF3366] text-white shadow-[0_0_15px_rgba(255,51,102,0.4)]' : 'bg-white/5 text-gray-400 hover:bg-white/10'}\`}
+            className={`px-6 py-3 rounded-full text-sm font-semibold transition-all ${!selectedCategory ? 'bg-[#FF3366] text-white shadow-[0_0_15px_rgba(255,51,102,0.4)]' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
           >
             Todas as Peças
           </button>
@@ -54,7 +54,7 @@ export default function ProdutosPage() {
             <button 
               key={c.id} 
               onClick={() => setSelectedCategory(c.name)} 
-              className={\`px-6 py-3 rounded-full text-sm font-semibold transition-all \${selectedCategory === c.name ? 'bg-[#FF3366] text-white shadow-[0_0_15px_rgba(255,51,102,0.4)]' : 'bg-white/5 text-gray-400 hover:bg-white/10'}\`}
+              className={`px-6 py-3 rounded-full text-sm font-semibold transition-all ${selectedCategory === c.name ? 'bg-[#FF3366] text-white shadow-[0_0_15px_rgba(255,51,102,0.4)]' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
             >
               {c.name}
             </button>
@@ -136,7 +136,7 @@ export default function ProdutosPage() {
               <div className="flex gap-4">
                 <button 
                   onClick={() => {
-                    addToCart({ id: quickViewProduct.id, name: quickViewProduct.name, price: Number(quickViewProduct.price), image: quickViewProduct.image_url, quantity: 1, type: 'vitrine' });
+                    addToCart({ id: quickViewProduct.id, name: quickViewProduct.name, price: Number(quickViewProduct.price), image_url: quickViewProduct.image_url, quantity: 1, type: 'product' });
                     setQuickViewProduct(null);
                     router.push('/carrinho');
                   }}

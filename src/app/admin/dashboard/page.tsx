@@ -591,7 +591,7 @@ export default function AdminDashboard() {
                   </div>
                   <div className="md:col-span-2">
                     <label className="text-xs text-gray-400 block mb-1">URL Pública da Imagem (Suba no Storage do Supabase e cole o link aqui)</label>
-                    <input type="url" required  placeholder="https://..." className="w-full bg-[#121212] border border-white/10 p-2 rounded text-white outline-none" />
+                    <input type="file" accept="image/*" onChange={e => handleFileUpload(e, 'banners', url => setBannerForm({...bannerForm, image_url: url}))} className="w-full bg-[#121212] border border-white/10 p-2 rounded text-white outline-none" />
                   </div>
                   <div className="md:col-span-2"><button type="submit" className="w-full btn-primary py-2 text-sm">Salvar Banner</button></div>
                 </form>
@@ -618,18 +618,32 @@ export default function AdminDashboard() {
             <div className="glass-panel p-8">
               <h2 className="text-xl font-bold flex items-center gap-2 mb-6"><Layers className="text-[#8A2BE2]"/> Ordem e Textos das Sessões</h2>
               <div className="space-y-6">
-                {landingContent.map((section) => (
-                  <div key={section.id} className="bg-white/5 p-4 rounded-lg border border-white/5">
-                    <h3 className="font-bold text-sm text-[#E0829D] uppercase tracking-widest mb-3">{section.id.replace('_', ' ')}</h3>
-                    <div className="grid gap-3">
+                {[...landingContent].sort((a, b) => {
+                  const order = ['hero_section', 'creation_section', 'vitrine_section', 'about_section', 'stories_section', 'contact_section'];
+                  const idxA = order.indexOf(a.id) === -1 ? 99 : order.indexOf(a.id);
+                  const idxB = order.indexOf(b.id) === -1 ? 99 : order.indexOf(b.id);
+                  return idxA - idxB;
+                }).map((section) => (
+                  <div key={section.id} className="bg-white/5 p-6 rounded-lg border border-white/10 hover:border-[#FF3366]/40 transition-colors shadow-lg">
+                    <h3 className="font-bold text-sm text-[#FF3366] uppercase tracking-widest mb-4 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#8A2BE2]"></span>
+                      {section.id.replace('_', ' ')}
+                    </h3>
+                    <div className="grid gap-4">
                       <div>
-                        <label className="text-xs text-gray-500 block">Título Principal</label>
-                        <input type="text" defaultValue={section.title} onBlur={(e) => saveLandingContent(section.id, 'title', e.target.value)} className="w-full bg-black/30 border border-transparent p-2 text-sm text-white focus:border-[#FF3366] transition outline-none" />
+                        <label className="text-xs text-gray-400 block mb-1">Título Principal</label>
+                        <input type="text" defaultValue={section.title} onBlur={(e) => saveLandingContent(section.id, 'title', e.target.value)} className="w-full bg-[#121212] border border-white/10 p-2 text-sm text-white focus:border-[#FF3366] rounded outline-none" />
                       </div>
                       <div>
-                        <label className="text-xs text-gray-500 block">Subtítulo / Texto de Apoio</label>
-                        <textarea defaultValue={section.subtitle} onBlur={(e) => saveLandingContent(section.id, 'subtitle', e.target.value)} className="w-full bg-black/30 border border-transparent p-2 text-sm text-white h-20 resize-none focus:border-[#FF3366] transition outline-none" />
+                        <label className="text-xs text-gray-400 block mb-1">Subtítulo / Texto de Apoio</label>
+                        <textarea defaultValue={section.subtitle} onBlur={(e) => saveLandingContent(section.id, 'subtitle', e.target.value)} className="w-full bg-[#121212] border border-white/10 p-2 text-sm text-white h-20 resize-none focus:border-[#FF3366] rounded outline-none" />
                       </div>
+                      {['hero_section', 'creation_section', 'vitrine_section', 'about_section', 'stories_section', 'contact_section'].includes(section.id) && (
+                        <div>
+                          <label className="text-xs text-gray-400 block mb-1">Texto do Botão (CTA)</label>
+                          <input type="text" defaultValue={section.cta_text || ''} onBlur={(e) => saveLandingContent(section.id, 'cta_text', e.target.value)} className="w-full bg-[#121212] border border-white/10 p-2 text-sm text-white focus:border-[#FF3366] rounded outline-none placeholder-gray-600" placeholder="Ex: Ver Loja" />
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -651,11 +665,11 @@ export default function AdminDashboard() {
                 <form onSubmit={saveStory} className="glass-panel p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
                     <label className="text-xs text-gray-400 block mb-1">URL Pública do Vídeo MP4 (Suba no Storage do Supabase e cole aqui)</label>
-                    <input required={false} type="file" accept="video/*" onChange={e => handleFileUpload(e, 'stories', url => setStoryForm({...storyForm, video_url: url}))} onChange={e=>setStoryForm({...storyForm, video_url: e.target.value})} placeholder="https://..." className="w-full bg-[#121212] border border-white/10 p-2 rounded text-white outline-none" />
+                    <input required={false} type="file" accept="video/*" onChange={e => handleFileUpload(e, 'stories', url => setStoryForm({...storyForm, video_url: url}))} className="w-full bg-[#121212] border border-white/10 p-2 rounded text-white outline-none" />
                   </div>
                   <div>
                     <label className="text-xs text-gray-400 block mb-1">URL da Capa (Thumbnail Opcional)</label>
-                    <input type="file" accept="image/*" onChange={e => handleFileUpload(e, 'stories', url => setStoryForm({...storyForm, thumbnail_url: url}))} onChange={e=>setStoryForm({...storyForm, thumbnail_url: e.target.value})} className="w-full bg-[#121212] border border-white/10 p-2 rounded text-white outline-none" />
+                    <input type="file" accept="image/*" onChange={e => handleFileUpload(e, 'stories', url => setStoryForm({...storyForm, thumbnail_url: url}))} className="w-full bg-[#121212] border border-white/10 p-2 rounded text-white outline-none" />
                   </div>
                   <div>
                     <label className="text-xs text-gray-400 block mb-1">Texto do Botão (CTA)</label>

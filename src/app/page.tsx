@@ -385,7 +385,7 @@ export default function Home() {
               <span className="inline-block text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full bg-transparent/15 text-[#E0829D] border border-[#8A2BE2]/40 mb-4 shadow-[0_0_15px_rgba(138,43,226,0.2)]">
                 Pronto para Entrega
               </span>
-              <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight">Vitrine <span className="gradient-text">Premium</span></h2>
+              <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight">{sections['vitrine_section']?.title || 'Vitrine Premium'}</h2>
               <p className="text-gray-400 text-lg">Artes exclusivas já modeladas e prontas para envio imediato.</p>
               <div className="w-24 h-1 bg-gradient-to-r from-[#FF3366] to-[#8A2BE2] mx-auto mt-4 rounded-full" />
             </motion.div>
@@ -461,7 +461,7 @@ export default function Home() {
               transition={{ duration: 0.7 }}
               className="text-center mb-16"
             >
-              <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4">O Padrão <span className="gradient-text">Criativa Sisters</span></h2>
+              <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4">{sections['about_section']?.title || 'O Padrão Criativa Sisters'}</h2>
               <p className="text-gray-400 text-lg">Tecnologia, precisão mecânica e precificação honesta.</p>
             </motion.div>
             
@@ -544,7 +544,7 @@ export default function Home() {
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
-              <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight">Quem Compra, <span className="gradient-text">Se Apaixona</span></h2>
+              <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight">{sections['stories_section']?.title || 'Quem Compra, Se Apaixona'}</h2>
               <p className="text-gray-400 mb-14 text-lg">Histórias reais de clientes que materializaram suas ideias.</p>
             </motion.div>
 
@@ -629,7 +629,7 @@ export default function Home() {
             transition={{ duration: 0.7 }}
             className="max-w-2xl mx-auto mb-20 relative z-10"
           >
-            <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight">Ainda tem dúvidas?</h2>
+            <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight">{sections['contact_section']?.title || 'Ainda tem dúvidas?'}</h2>
             <p className="text-gray-400 mb-8 text-lg">Nossa equipe de especialistas em modelagem está pronta para transformar qualquer projeto em realidade.</p>
             
             <div className="relative inline-block group">
