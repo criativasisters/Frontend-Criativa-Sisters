@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { useCart } from '@/contexts/CartContext';
 import { motion } from "framer-motion";
 import { ScrollSnake } from "@/components/ScrollSnake";
+import { QuickViewModal } from "@/components/QuickViewModal";
 
 export default function Home() {
   const { addToCart } = useCart();
@@ -653,6 +654,14 @@ export default function Home() {
         </section>
 
       </main>
+
+      
+      {/* QUICK VIEW MODAL */}
+      <QuickViewModal 
+        isOpen={!!quickViewProduct} 
+        product={quickViewProduct} 
+        onClose={() => setQuickViewProduct(null)} 
+      />
 
       {/* MODAL DO STORY (Fundo Borrado) */}
       {activeStory && (
