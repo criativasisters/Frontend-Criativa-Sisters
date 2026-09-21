@@ -147,10 +147,7 @@ export function ScrollSnake() {
       ctx.clearRect(0, 0, width, height);
 
       // Se estiver no topo (Hero section), não desenha para economizar CPU
-      if (globalOpacity <= 0.01) {
-        animId = requestAnimationFrame(render);
-        return;
-      }
+      // Removed return so it renders immediately
 
       const docHeight = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight, window.innerHeight);
       const maxScroll = Math.max(1, docHeight - window.innerHeight);
@@ -171,8 +168,8 @@ export function ScrollSnake() {
           if (i === 0) ctx.moveTo(pt.x, sY);
           else ctx.lineTo(pt.x, sY);
         }
-        ctx.strokeStyle = "rgba(255,255,255,0.02)";
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = "rgba(255,51,102,0.15)";
+        ctx.lineWidth = 3;
         ctx.stroke();
 
         // 1. Camada de Brilho Neon Fluído (Rastro por onde já passou)
@@ -198,7 +195,7 @@ export function ScrollSnake() {
           ctx.moveTo(pt1.x + sway1, sY1);
           ctx.lineTo(pt2.x + sway2, sY2);
           ctx.strokeStyle = colorGrad;
-          ctx.lineWidth = 5 + Math.sin(time + i * 0.05) * 2;
+          ctx.lineWidth = 15 + Math.sin(time + i * 0.05) * 5;
           ctx.lineCap = "round";
           ctx.shadowBlur = 15;
           ctx.shadowColor = colorGrad;
@@ -210,7 +207,7 @@ export function ScrollSnake() {
         ctx.shadowBlur = 8;
         ctx.shadowColor = "#FFFFFF";
         ctx.globalAlpha = 0.4 * globalOpacity;
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 6;
         ctx.beginPath();
         let started = false;
         for (let i = Math.max(0, headIndex - 200); i <= headIndex; i += 2) {
@@ -314,8 +311,8 @@ export function ScrollSnake() {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 w-full h-full pointer-events-none z-0"
-      style={{ mixBlendMode: "screen", opacity: 0.55 }}
+      className="fixed inset-0 w-full h-full pointer-events-none z-[1] opacity-100"
+      style={{ opacity: 1 }}
     />
   );
 }

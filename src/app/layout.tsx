@@ -51,7 +51,7 @@ export default function RootLayout({
     <html lang="pt-BR">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-[#050505] text-white selection:bg-[#FF3366] selection:text-white relative`}>
         {/* Fundo Global Gradiente */}
-        <div className="fixed inset-0 z-[-1] bg-[radial-gradient(ellipse_at_top,_#1a0b1c,_#050505_80%)] pointer-events-none" />
+        <div className="fixed inset-0 z-[-1] bg-[radial-gradient(ellipse_at_top,_#4a1236_0%,_#050505_100%)] pointer-events-none" />
         <CartProvider>
           <Navbar />
           {children}

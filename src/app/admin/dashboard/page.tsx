@@ -9,6 +9,15 @@ import * as XLSX from 'xlsx';
 import Image from 'next/image';
 import imageCompression from 'browser-image-compression';
 
+
+// Helper to fix broken relative URLs in the database
+const getValidUrl = (url: string | null | undefined) => {
+  if (!url) return '/placeholder.png';
+  if (url.startsWith('http')) return url;
+  if (url.startsWith('media/')) return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${url}`;
+  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/${url}`;
+};
+
 export default function AdminDashboard() {
   const router = useRouter();
   // 📈 INSIGHTS STATES
@@ -678,7 +687,7 @@ export default function AdminDashboard() {
                   <div key={b.id} className="flex items-center justify-between bg-black/40 p-3 rounded border border-white/5 hover:border-white/10">
                     <div className="flex items-center gap-4">
                       <div className="w-16 h-8 relative rounded overflow-hidden">
-                        <Image src={b.image_url} alt="Banner" fill className="object-cover" />
+                        <img src={getValidUrl(b.image_url)} alt="Banner" className="absolute inset-0 w-full h-full object-cover" />
                       </div>
                       <div>
                         <p className="font-bold text-sm">Ordem: {b.display_order}</p>
@@ -765,7 +774,7 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {stories.map(story => (
                   <div key={story.id} className="relative w-full aspect-[9/16] bg-black rounded-xl overflow-hidden group border border-white/10">
-                    <video src={story.video_url} className="w-full h-full object-cover opacity-50" />
+                    <video src={getValidUrl(story.video_url)} className="w-full h-full object-cover opacity-50" />
                     <button onClick={() => deleteStory(story.id)} className="absolute top-2 right-2 bg-red-500/80 p-2 rounded-full opacity-0 group-hover:opacity-100 transition"><Trash size={14}/></button>
                     <div className="absolute bottom-0 inset-x-0 p-3 bg-gradient-to-t from-black to-transparent">
                       <p className="text-xs text-[#FF3366] font-bold truncate">{story.cta_text}</p>
@@ -812,7 +821,7 @@ export default function AdminDashboard() {
                 
                 <div className="col-span-2">
                   <label className="text-sm text-gray-400 block mb-1">URL da Imagem (Principal)</label>
-                  <div className="flex gap-2 items-center"><input type="file" accept="image/*" onChange={e => handleFileUpload(e, 'products', (url) => setProdForm({...prodForm, image_url: url}))} className="w-full bg-[#121212] border border-white/10 p-1.5 rounded text-white text-sm" />{prodForm.image_url && <img src={prodForm.image_url} className="h-8 w-8 object-cover rounded" />}</div>
+                  <div className="flex gap-2 items-center"><input type="file" accept="image/*" onChange={e => handleFileUpload(e, 'products', (url) => setProdForm({...prodForm, image_url: url}))} className="w-full bg-[#121212] border border-white/10 p-1.5 rounded text-white text-sm" />{getValidUrl(prodForm.image_url) && <img src={getValidUrl(prodForm.image_url)} className="h-8 w-8 object-cover rounded" />}</div>
                 </div>
                 
                 <div className="col-span-2">

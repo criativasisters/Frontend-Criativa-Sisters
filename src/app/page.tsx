@@ -11,6 +11,15 @@ import { motion } from "framer-motion";
 import { ScrollSnake } from "@/components/ScrollSnake";
 import { QuickViewModal } from "@/components/QuickViewModal";
 
+
+// Helper to fix broken relative URLs in the database
+const getValidUrl = (url: string | null | undefined) => {
+  if (!url) return '/placeholder.png';
+  if (url.startsWith('http')) return url;
+  if (url.startsWith('media/')) return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${url}`;
+  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/${url}`;
+};
+
 export default function Home() {
   const { addToCart } = useCart();
   const router = useRouter();
@@ -234,7 +243,7 @@ export default function Home() {
           {/* Flash Banner (Topo) - sem Flash Banner usa Hero padrão */}
           {flashBanners.length > 0 ? (
             <div className="w-full h-[500px] relative flex items-center justify-center overflow-hidden border-b border-white/5">
-               <Image src={flashBanners[0].image_url} alt="Destaque" fill className="object-cover opacity-60" />
+               <img src={getValidUrl(flashBanners[0].image_url)} alt="Destaque" className="absolute inset-0 w-full h-full object-cover opacity-60" />
                <div className="absolute inset-0 bg-gradient-to-t from-[#020202] via-black/40 to-transparent" />
                <div className="relative z-10 text-center px-6">
                  <motion.h1 initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, ease: "easeOut" }}
@@ -275,7 +284,7 @@ export default function Home() {
               <div className="flex gap-4 animate-marquee whitespace-nowrap">
                 {[...loopBanners, ...loopBanners].map((banner, i) => (
                   <div key={i} className="inline-block relative w-[280px] h-[160px] rounded-lg overflow-hidden shrink-0 border border-white/10 hover:border-[#FF3366] transition">
-                    <Image src={banner.image_url} alt="Banner" fill className="object-cover" />
+                    <img src={getValidUrl(banner.image_url)} alt="Banner" className="absolute inset-0 w-full h-full object-cover" />
                   </div>
                 ))}
               </div>
@@ -317,8 +326,8 @@ export default function Home() {
                     className="relative w-32 h-48 shrink-0 rounded-2xl overflow-hidden border border-white/10 hover:border-[#FF3366] transition-all group shadow-[0_0_20px_rgba(255,51,102,0.15)] cursor-pointer"
                   >
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent group-hover:from-black/60 transition z-10" />
-                    {story.thumbnail_url ? (
-                      <Image src={story.thumbnail_url} alt="Story" fill className="object-cover group-hover:scale-110 transition duration-500" />
+                    {getValidUrl(story.thumbnail_url) ? (
+                      <img src={getValidUrl(story.thumbnail_url)} alt="Story" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition duration-500" />
                     ) : (
                       <div className="w-full h-full bg-transparent flex items-center justify-center"><Play className="text-white/40"/></div>
                     )}
@@ -437,8 +446,8 @@ export default function Home() {
                   >
                     <div className="h-64 bg-transparent flex items-center justify-center relative overflow-hidden">
                       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent z-10" />
-                      {prod.image_url ? (
-                        <Image src={prod.image_url || '/placeholder.png'} alt={prod.name} fill className="object-cover z-0 group-hover:scale-110 transition-transform duration-700" />
+                      {getValidUrl(prod.image_url) ? (
+                        <img src={getValidUrl(prod.image_url) || '/placeholder.png'} alt={prod.name} className="absolute inset-0 w-full h-full object-cover z-0 group-hover:scale-110 transition-transform duration-700" />
                       ) : (
                         <Package size={64} className="text-gray-600 group-hover:text-[#FF3366] transition-colors z-0" />
                       )}
@@ -465,7 +474,7 @@ export default function Home() {
                           name: prod.name,
                           price: prod.price,
                           quantity: 1,
-                          image_url: prod.image_url || '',
+                          image_url: getValidUrl(prod.image_url) || '',
                           type: 'product',
                           weight_g: 250
                         });
@@ -700,7 +709,7 @@ export default function Home() {
             <X size={32} />
           </button>
           
-          <div className="w-full max-w-[400px] h-[80vh] bg-black rounded-xl overflow-hidden relative shadow-[0_0_50px_rgba(255,51,102,0.2)]">
+          <div className="w-full max-w-[400px] h-[80vh] bg-transparent rounded-xl overflow-hidden relative shadow-[0_0_50px_rgba(255,51,102,0.2)]">
             
             {/* Arrows */}
             <button onClick={(e) => { e.stopPropagation(); handleStoryPrev(); }} className="absolute left-2 top-1/2 -translate-y-1/2 z-50 p-2 bg-black/50 text-white rounded-full hover:bg-black/80 transition">&larr;</button>
