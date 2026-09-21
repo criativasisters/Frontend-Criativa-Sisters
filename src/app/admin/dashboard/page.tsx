@@ -32,6 +32,34 @@ export default function AdminDashboard() {
   const [storyForm, setStoryForm] = useState({ video_url: '', thumbnail_url: '', cta_text: 'Comprar', product_id: '' });
 
   // Tripo3D Balance State
+  
+  const [categories, setCategories] = useState<any[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState('');
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, folder: string, callback: (url: string) => void) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setIsUploading(true);
+    setUploadProgress('Fazendo upload...');
+    
+    try {
+      const fileName = `${folder}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+      const { data, error } = await supabase.storage.from('media').upload(fileName, file);
+      
+      if (error) throw error;
+      
+      const { data: urlData } = supabase.storage.from('media').getPublicUrl(fileName);
+      callback(urlData.publicUrl);
+    } catch (err: any) {
+      alert('Erro no upload: ' + err.message);
+    } finally {
+      setIsUploading(false);
+      setUploadProgress('');
+    }
+  };
+
   const [tripoBalance, setTripoBalance] = useState<{
     balance: number;
     frozen: number;
@@ -120,6 +148,8 @@ export default function AdminDashboard() {
     if (stors) setStories(stors);
 
     const { data: costs } = await supabase.from('cost_parameters').select('*');
+    const { data: cats } = await supabase.from('categories').select('*').order('name');
+    if (cats) setCategories(cats);
     if (costs && costs.length > 0) {
       const configMap: any = {};
       costs.forEach(c => { configMap[c.id] = Number(c.value); });
@@ -561,7 +591,7 @@ export default function AdminDashboard() {
                   </div>
                   <div className="md:col-span-2">
                     <label className="text-xs text-gray-400 block mb-1">URL Pública da Imagem (Suba no Storage do Supabase e cole o link aqui)</label>
-                    <input type="url" required value={bannerForm.image_url} onChange={e=>setBannerForm({...bannerForm, image_url: e.target.value})} placeholder="https://..." className="w-full bg-[#121212] border border-white/10 p-2 rounded text-white outline-none" />
+                    <input type="url" required  placeholder="https://..." className="w-full bg-[#121212] border border-white/10 p-2 rounded text-white outline-none" />
                   </div>
                   <div className="md:col-span-2"><button type="submit" className="w-full btn-primary py-2 text-sm">Salvar Banner</button></div>
                 </form>
@@ -621,11 +651,11 @@ export default function AdminDashboard() {
                 <form onSubmit={saveStory} className="glass-panel p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
                     <label className="text-xs text-gray-400 block mb-1">URL Pública do Vídeo MP4 (Suba no Storage do Supabase e cole aqui)</label>
-                    <input required type="url" value={storyForm.video_url} onChange={e=>setStoryForm({...storyForm, video_url: e.target.value})} placeholder="https://..." className="w-full bg-[#121212] border border-white/10 p-2 rounded text-white outline-none" />
+                    <input required={false} type="file" accept="video/*" onChange={e => handleFileUpload(e, 'stories', url => setStoryForm({...storyForm, video_url: url}))} onChange={e=>setStoryForm({...storyForm, video_url: e.target.value})} placeholder="https://..." className="w-full bg-[#121212] border border-white/10 p-2 rounded text-white outline-none" />
                   </div>
                   <div>
                     <label className="text-xs text-gray-400 block mb-1">URL da Capa (Thumbnail Opcional)</label>
-                    <input type="url" value={storyForm.thumbnail_url} onChange={e=>setStoryForm({...storyForm, thumbnail_url: e.target.value})} className="w-full bg-[#121212] border border-white/10 p-2 rounded text-white outline-none" />
+                    <input type="file" accept="image/*" onChange={e => handleFileUpload(e, 'stories', url => setStoryForm({...storyForm, thumbnail_url: url}))} onChange={e=>setStoryForm({...storyForm, thumbnail_url: e.target.value})} className="w-full bg-[#121212] border border-white/10 p-2 rounded text-white outline-none" />
                   </div>
                   <div>
                     <label className="text-xs text-gray-400 block mb-1">Texto do Botão (CTA)</label>
@@ -670,14 +700,29 @@ export default function AdminDashboard() {
             {showProductForm && (
               <form onSubmit={saveProduct} className="glass-panel p-6 grid grid-cols-2 gap-4">
                 <div className="col-span-2 md:col-span-1"><label className="text-sm text-gray-400 block mb-1">Nome</label><input required type="text" value={prodForm.name} onChange={e=>setProdForm({...prodForm, name: e.target.value})} className="w-full bg-[#121212] border border-white/10 p-2 rounded text-white outline-none focus:border-[#FF3366]" /></div>
-                <div className="col-span-2 md:col-span-1"><label className="text-sm text-gray-400 block mb-1">Categoria</label><input type="text" value={prodForm.category} onChange={e=>setProdForm({...prodForm, category: e.target.value})} className="w-full bg-[#121212] border border-white/10 p-2 rounded text-white outline-none focus:border-[#FF3366]" placeholder="Ex: Action Figure, Utensílios..." /></div>
+                <div className="col-span-2 md:col-span-1"><label className="text-sm text-gray-400 block mb-1">Categoria</label>
+<div className="flex gap-2">
+  <select value={prodForm.category} onChange={e=>setProdForm({...prodForm, category: e.target.value})} className="w-full bg-[#121212] border border-white/10 p-2 rounded text-white outline-none focus:border-[#FF3366]">
+    <option value="">Selecione...</option>
+    {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+  </select>
+  <button type="button" onClick={async () => {
+    const newCat = prompt('Nova categoria:');
+    if (newCat) {
+      await supabase.from('categories').insert({name: newCat});
+      fetchData();
+      setProdForm({...prodForm, category: newCat});
+    }
+  }} className="btn-secondary px-3" title="Nova Categoria">+</button>
+</div>
+</div>
                 
                 <div className="col-span-2 md:col-span-1"><label className="text-sm text-gray-400 block mb-1">Preço (R$)</label><input required type="number" step="0.01" value={prodForm.price} onChange={e=>setProdForm({...prodForm, price: e.target.value})} className="w-full bg-[#121212] border border-white/10 p-2 rounded text-white outline-none focus:border-[#FF3366]" /></div>
                 <div className="col-span-2 md:col-span-1"><label className="text-sm text-gray-400 block mb-1">Estoque</label><input required type="number" value={prodForm.stock} onChange={e=>setProdForm({...prodForm, stock: e.target.value})} className="w-full bg-[#121212] border border-white/10 p-2 rounded text-white outline-none focus:border-[#FF3366]" /></div>
                 
                 <div className="col-span-2">
                   <label className="text-sm text-gray-400 block mb-1">URL da Imagem (Principal)</label>
-                  <input type="url" value={prodForm.image_url} onChange={e=>setProdForm({...prodForm, image_url: e.target.value})} className="w-full bg-[#121212] border border-white/10 p-2 rounded text-white outline-none focus:border-[#FF3366]" placeholder="https://..." />
+                  <div className="flex gap-2 items-center"><input type="file" accept="image/*" onChange={e => handleFileUpload(e, 'products', (url) => setProdForm({...prodForm, image_url: url}))} className="w-full bg-[#121212] border border-white/10 p-1.5 rounded text-white text-sm" />{prodForm.image_url && <img src={prodForm.image_url} className="h-8 w-8 object-cover rounded" />}</div>
                 </div>
                 
                 <div className="col-span-2">
@@ -695,7 +740,7 @@ export default function AdminDashboard() {
                   <textarea value={prodForm.description} onChange={e=>setProdForm({...prodForm, description: e.target.value})} className="w-full bg-[#121212] border border-white/10 p-2 rounded text-white outline-none focus:border-[#FF3366] h-32 resize-none" placeholder="Descreva os diferenciais, material e benefícios da peça..." />
                 </div>
 
-                <div className="col-span-2 mt-2"><button type="submit" className="w-full btn-secondary py-3">Salvar Produto na Vitrine</button></div>
+                <div className="col-span-2 mt-2"><button type="submit" disabled={isUploading} className="w-full btn-secondary py-3">{isUploading ? uploadProgress : 'Salvar Produto na Vitrine'}</button></div>
               </form>
             )}
 

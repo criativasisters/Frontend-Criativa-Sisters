@@ -24,6 +24,11 @@ export default function Home() {
   const [banners, setBanners] = useState<any[]>([]);
   const [stories, setStories] = useState<any[]>([]);
   
+  
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [quickViewProduct, setQuickViewProduct] = useState<any>(null);
+
   // States Modal Stories
   const [activeStory, setActiveStory] = useState<any>(null);
 
@@ -62,7 +67,10 @@ export default function Home() {
           });
         }
         
-        const { data: pData, error: pErr } = await supabase.from('products').select('*').limit(6);
+        const { data: cData } = await supabase.from('categories').select('*').order('name');
+        if (cData) setCategories(cData);
+
+        const { data: pData, error: pErr } = await supabase.from('products').select('*').limit(8);
         if (pData && !pErr) setProducts(pData);
         else console.warn('Products table not found or empty.');
       } catch (err) {
@@ -386,7 +394,7 @@ export default function Home() {
               {products.length === 0 ? (
                 <p className="col-span-3 text-center text-gray-500 py-12">Nenhum produto cadastrado na vitrine ainda.</p>
               ) : (
-                products.map((prod, index) => (
+                (selectedCategory ? products.filter((p:any) => p.category === selectedCategory) : products).map((prod: any, index: number) => (
                   <motion.div 
                     key={prod.id} 
                     initial={{ opacity: 0, y: 60, scale: 0.9, rotateX: 12 }}
@@ -394,7 +402,7 @@ export default function Home() {
                     viewport={{ once: true, margin: "-40px" }}
                     transition={{ duration: 0.6, delay: index * 0.12, ease: "easeOut" }}
                     whileHover={{ y: -10, scale: 1.02 }}
-                    className="glass-panel group overflow-hidden border-white/5 hover:border-[#FF3366]/60 hover:shadow-[0_0_40px_rgba(255,51,102,0.25)] transition-all duration-300"
+                    onClick={() => setQuickViewProduct(prod)} className="glass-panel group overflow-hidden border-white/5 hover:border-[#FF3366]/60 hover:shadow-[0_0_40px_rgba(255,51,102,0.25)] transition-all duration-300 cursor-pointer"
                   >
                     <div className="h-64 bg-transparent flex items-center justify-center relative overflow-hidden">
                       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent z-10" />
